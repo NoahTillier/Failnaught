@@ -21,7 +21,10 @@ char *inputs[4] = {help, close, start, end};
 
 //help input
 void appHelp(){
-	printf("\nThe following are available functions:\n\n'close' : closes the program\n'start' : starts a study session\n'end' : ends a started study session\n\n");
+	printf("\nThe following are available functions:\n\n"
+		"'close' : closes the program\n"
+		"'start' : starts a study session\n'"
+		"end' : ends a started study session\n\n");
 }
 
 //close input
