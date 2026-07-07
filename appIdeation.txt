@@ -1,0 +1,57 @@
+The following is an outline of the desired features of this app once it
+has reached its final stage.
+
+The app is designed to have the following features:
+
+- A study timer which logs study hours. Hours spent in study is a
+useful metric because it allows one to set measurable study goals.
+
+- Manual input for study hours. Many gamified study apps do not have
+a manual tool to input study hours if not using the study timer,
+leading to a potential loss of data.
+
+- A subject-based "formula sheet". As content is added under a subject 
+to the app, a formula sheet is compiled with content to practice.
+Content could be proofs, formulas, theses, vocabulary, or definitions.
+
+- The SM-2 study repetition algorithm. It is important to expand the
+intervals between practicing content to ensure its long-term memory.
+The SM-2 algorithm is a rudimentary way of organizing these intervals.
+
+
+An outline of the architecture of the app is as follows:
+
+- Sheet Page:
+  - Colored side-tabs on the left where each is linked to a subject.
+  - Clicking on a side-tab displays a different subject sheet in the
+center.
+  - Each subject sheet is a formula sheet which includes all the
+content you have entered into the app.
+  - Each entry in the formula sheet is colored in accordance with its
+difficulty to you.
+  - Two top tabs which allow you to toggle between your formula sheet
+and practice problems.
+
+- Pomodoro Page:
+  - A clock that you start/stop which auto logs.
+  - A click-through window when you start the clock to rate energy
+levels.
+  - A click through window when you end to: 
+    - rate the activity in terms of ease from 0-5 for the SM-2 
+      algorithm;
+    - describe what the activity was (proofs > practice problems/
+      project > notecards > note taking > light reading);
+    - select the items that were practiced on the formula sheet;
+    - add items to the formula sheet and practice sheet.
+  - A button to manually enter/edit times spent studying in the system
+database.
+
+- Daily Page:
+  - Displays content for the user to practice according to the SM-2 
+algorithm. The priority increases with the number of days passed the 
+suggested practice date, unless dismissed.
+  - Graphy of daily study time w/ colored blocks corresponding to
+difficulty.
+  - Itensity factor for each block calculated using the SM-2 difficulty
+multiplied by some fraction related to the difficulty of the specific 
+task.
