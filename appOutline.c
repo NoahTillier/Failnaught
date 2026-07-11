@@ -37,7 +37,7 @@ void appClose(){
 int startClock(){
 	//start function
 	const char *insert = 
-	"INSERT INTO session (startenergy) "
+	"INSERT INTO sessions (startenergy) "
 	"VALUES (?);";
 
 	//gets values from user
