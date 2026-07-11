@@ -4,20 +4,20 @@
 
 //global variables
 
+//database
+sqlite3 *db;
 //buffer to store user input
 char operation[150];
-
 //valid inputs
 char help[10] = "help\n";
 char close[10] = "close\n";
 char start[10] = "start\n";
 char end[10] = "end\n";
-
 //number of inputs
 int numInputs = 4;
-
 //input array
 char *inputs[4] = {help, close, start, end};
+
 
 //help input
 void appHelp(){
@@ -34,11 +34,40 @@ void appClose(){
 }
 
 //starts the clock by creating a new database entry.
-void startClock(){
+int startClock(){
+	//start function
 	const char *insert = 
-	"INSERT INTO session (startenergy, endenergy) "
-	"VALUES (?, ?);";
+	"INSERT INTO session (startenergy) "
+	"VALUES (?);";
 
+	//gets values from user
+	printf("\nWhat is your current energy level from 1 to 10?\n\nFailnaught: ");
+	
+	char *startEnergy = fgets(operation, 150, stdin);
+
+	sqlite3_stmt *stmt;
+	int rc = sqlite3_prepare_v2(db, insert, -1, &stmt, NULL);
+
+	if( rc != SQLITE_OK) {
+        	printf("Failed to prepare statement: %s\n", sqlite3_errmsg(db));
+        	return rc;
+    	}
+
+	//bind parameters
+	sqlite3_bind_text(stmt, 1, startEnergy, -1, SQLITE_TRANSIENT);
+
+	//execute
+	rc = sqlite3_step(stmt);
+
+	if (rc != SQLITE_DONE) {
+		printf("Execution failed: %s\n", sqlite3_errmsg(db));
+	}
+	else{
+		printf("You have started a new study session\n");
+	}
+
+	sqlite3_finalize(stmt);
+	return rc;
 }
 
 //ends the clock by creating a new database entry.
@@ -76,7 +105,7 @@ void parse(char *str){
 			appClose();
 			break;
 		case 2:
-			//start
+			startClock();
 			break;
 		case 3: 
 			//end
@@ -89,8 +118,6 @@ void parse(char *str){
 
 //main method
 int main(){
-	//creates an empty pointer for the database
-	sqlite3 *db;
 	//creates an error message for sqlite functions
 	char *err_msg = NULL;
 
