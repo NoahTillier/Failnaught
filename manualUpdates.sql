@@ -76,10 +76,13 @@
 
 -- WHERE can be "column = x" "column IN (1, 2, 3)" "column LIKE 'An%'" or "column BETWEEN 10 AND 20"
 
-SELECT 
-    id, start
-FROM   
-    sessions
-ORDER BY 
-    end DESC
-LIMIT 1;
+--selects only the latest entry
+-- SELECT 
+--    id, start
+-- FROM   
+--    sessions
+-- ORDER BY 
+--    end DESC
+-- LIMIT 1;
+
+-- ALTER TABLE sessions ADD COLUMN status INTEGER DEFAULT 0;
