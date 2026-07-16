@@ -79,7 +79,7 @@ int endClock(){
 			"endenergy = ?, "
 			"difficulty = ?, "
 			"focusdepth = ?, "
-			"status = 1"	
+			"status = 1 "	
 		"WHERE "
 			"id = (SELECT MAX(id) FROM sessions);";
 	//status
@@ -220,7 +220,7 @@ void parse(char *str){
 			startClock();
 			break;
 		case 3: 
-			//end
+			endClock();
 			break;
                 default: 
 			printf("\nThere is no matching input. Please retry or enter 'help' for more options.\n\n");
