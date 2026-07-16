@@ -63,7 +63,7 @@ int startClock(){
 		printf("Execution failed: %s\n", sqlite3_errmsg(db));
 	}
 	else{
-		printf("You have started a new study session\n");
+		printf("\nYou have started a new study session.\n\n");
 	}
 
 	sqlite3_finalize(stmt);
@@ -109,14 +109,15 @@ int endClock(){
 	if(rc == SQLITE_ROW){
 		status = sqlite3_column_int(stmt, 0);
 	} else {
-		printf("No rows returned.\n");
+		printf("\nYou do not have any study sessions to close.\n\n");
+		return rc;
 	}
 	
 	//the finalize statement destroys stmt so it can be reused.
 	sqlite3_finalize(stmt);
 
 	if(status == 1){
-		printf("There are active no sessions to end\n");
+		printf("\nThere are active no sessions to end.\n\n");
 		return rc;
 	}
 
@@ -126,7 +127,7 @@ int endClock(){
 	int focusdepth = -1;
 
 	//collects the endenergy value
-	while(endenergy < 0 || endenergy > 10){
+	while(endenergy < 1 || endenergy > 10){
 		printf("\nRate your energy after this study session from 1 to 10.\n\nFailnaught: ");
 		
 		//collects input
@@ -134,7 +135,7 @@ int endClock(){
 		
 		//preforms input validation
 		if (sscanf(operation, "%d", &endenergy) != 1 || (endenergy < 1 || endenergy > 10)){
-			printf("Invalid input. Try again.\n");
+			printf("Invalid input. Try again.\n\n");
 		}
 	}
 
@@ -147,20 +148,20 @@ int endClock(){
 
 		//preforms input validation
 		if(sscanf(operation, "%d", &difficulty) != 1 || (difficulty < 0 || difficulty > 5)){
-			printf("Invalid input. Try again.\n");
+			printf("Invalid input. Try again.\n\n");
 		}
 	}
 
 	//collects the focusdepth value
 	while(focusdepth < 1 || focusdepth > 5){
-		printf("Enter a number corresponding to the activity you were doing. Estimate a weighted average if necessary.\n Logical proofs = 5\n Practice problems or a project = 4\n Notecard practice = 3\n Note taking or in-class participation = 2\n Light reading = 1\n\n Failnaught: ");
+		printf("\nEnter a number corresponding to the activity you were doing. Estimate a weighted average if necessary.\n Logical proofs = 5\n Practice problems or a project = 4\n Notecard practice = 3\n Note taking or in-class participation = 2\n Light reading = 1\n\n Failnaught: ");
 		
 		//collects input
 		fgets(operation, 150, stdin);
 
 		//preforms input validation
 		if(sscanf(operation, "%d", &focusdepth) != 1 || (focusdepth < 1 || focusdepth > 5)){
-			printf("Invalid input. Try again.\n");
+			printf("Invalid input. Try again.\n\n");
 		}
 	}
 
@@ -184,7 +185,7 @@ int endClock(){
 	//finalizes
 	sqlite3_finalize(stmt);
 
-	printf("Your study session has ended.");
+	printf("\nYour study session has ended.\n\n");
 }
 
 //equalsStr is used to compare two strings, a and b
