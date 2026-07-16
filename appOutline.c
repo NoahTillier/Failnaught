@@ -81,7 +81,7 @@ int endClock(){
 			"focusdepth = ?, "
 			"status = 1"	
 		"WHERE "
-			"id = (SELECT MAX(id) FROM sessions);"
+			"id = (SELECT MAX(id) FROM sessions);";
 	//status
 	int status = -1;
 	sqlite3_stmt *stmt;
@@ -89,7 +89,7 @@ int endClock(){
 	const char *statfun = 
 		"SELECT status " 
 		"FROM sessions "
-		"WHERE id = (SELECT MAX(id) FROM sessions);"
+		"WHERE id = (SELECT MAX(id) FROM sessions);";
 	
 	//error message string
 	char *err = NULL;
@@ -100,7 +100,7 @@ int endClock(){
 	
 	//checks to make sure that the statement was compiled without errors
 	if(rc != SQLITE_OK){
-		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db);
+		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
 		return rc;
 	}
 	
@@ -170,13 +170,13 @@ int endClock(){
 
 	//checks taht the statement compiled without errors
 	if(rc != SQLITE_OK){
-		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db);
+		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
 		return rc;
 	}
 
 	sqlite3_bind_int(stmt, 1, endenergy);
 	sqlite3_bind_int(stmt, 2, difficulty);
-	sqlite3-bind_int(stmt, 3, focusdepth);
+	sqlite3_bind_int(stmt, 3, focusdepth);
 	
 	//runs the line
 	sqlite3_step(stmt);
