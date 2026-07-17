@@ -40,10 +40,19 @@ int startClock(){
 	"INSERT INTO sessions (startenergy) "
 	"VALUES (?);";
 
-	//gets values from user
-	printf("\nWhat is your current energy level from 1 to 10?\n\nFailnaught: ");
+	int startEnergy = -1;
 	
-	char *startEnergy = fgets(operation, 150, stdin);
+	while(startEnergy < 1 || startEnergy > 10){
+	//gets values from user
+		printf("\nWhat is your current energy level from 1 to 10?\n\nFailnaught: ");
+	
+		fgets(operation, 150, stdin);
+
+		//preforms input validation
+                if (sscanf(operation, "%d", &startEnergy) != 1 || (startEnergy < 1 || startEnergy > 10)){
+                        printf("Invalid input. Try again.\n\n");
+                }
+	}
 
 	sqlite3_stmt *stmt;
 	int rc = sqlite3_prepare_v2(db, insert, -1, &stmt, NULL);
@@ -54,7 +63,7 @@ int startClock(){
     	}
 
 	//bind parameters
-	sqlite3_bind_text(stmt, 1, startEnergy, -1, SQLITE_TRANSIENT);
+	sqlite3_bind_int(stmt, 1, startEnergy);
 
 	//execute
 	rc = sqlite3_step(stmt);
