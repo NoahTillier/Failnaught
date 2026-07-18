@@ -299,6 +299,29 @@ int equalsStr(char *a, char *b){
 	return 0;
 }
 
+//AI code--callback
+int callback(void *NotUsed, int argc, char **argv, char **colName) {
+	for (int i = 0; i < argc; i++) {
+		printf("%s\n", argv[i]);   // print table name
+	}
+	return 0;
+}
+
+int listTopics(){
+	char *err_msg = NULL;
+	const char *sql = "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT IN ('sessions', 'sqlite_sequence');"; 
+	
+	int rc = sqlite3_exec(db, sql, callback, NULL, &err_msg);
+
+        if (rc != SQLITE_OK) {
+		fprintf(stderr, "SQL error: %s\n", err_msg);
+                sqlite3_free(err_msg);
+                return 1;
+        }
+
+	return 0;
+}
+
 //The parse method compares the input to a list of possible inputs,
 //calling the corresponding function.
 //If the input is invalid, it prints 'invalid input'
@@ -324,7 +347,7 @@ void parse(char *str){
 			makenew();
 			break;
 		case 5:
-			//list
+			listTopics();
 			break;
 		case 6:
 			//entry
