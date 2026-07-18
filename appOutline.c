@@ -15,13 +15,14 @@ char close[10] = "close\n";
 char start[10] = "start\n";
 char end[10] = "end\n";
 char makeNew[10] = "makenew\n";
+char list[10] = "list\n";
 char entry[10] = "entry\n";
 char daily[10] = "daily\n";
 
 //number of inputs
-int numInputs = 7;
+int numInputs = 8;
 //input array
-char *inputs[7] = {help, close, start, end, makeNew, entry, daily};
+char *inputs[8] = {help, close, start, end, makeNew, list, entry, daily};
 
 
 //help input
@@ -31,6 +32,7 @@ void appHelp(){
 		"'start' : starts a study session\n"
 		"'end' : ends a started study session\n"
 		"'makenew' : creates a new studyset\n"
+		"'list' : lists all your current studysets\n"
 		"'entry' : creates a new entry in a studyset\n"
 		"'daily' : begins review of daily sets \n\n");
 }
@@ -96,7 +98,7 @@ int makenew(){
 
 	//prints the sql command to sql
 	snprintf(sql, sizeof(sql),
-		"CREATE TABLE %s ("
+		"CREATE TABLE IF NOT EXISTS %s ("
 		"id INTEGER PRIMARY KEY AUTOINCREMENT,"
 		"question TEXT NOT NULL,"
 		"answer TEXT,"
@@ -322,9 +324,12 @@ void parse(char *str){
 			makenew();
 			break;
 		case 5:
-			//entry
+			//list
 			break;
 		case 6:
+			//entry
+			break;
+		case 7:
 			//daily
 			break;
                 default: 
