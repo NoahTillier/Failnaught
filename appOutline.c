@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sqlite3.h>
+#include <ctype.h>
 
 //global variables
 
@@ -13,24 +14,109 @@ char help[10] = "help\n";
 char close[10] = "close\n";
 char start[10] = "start\n";
 char end[10] = "end\n";
+char makeNew[10] = "makenew\n";
+char entry[10] = "entry\n";
+char daily[10] = "daily\n";
+
 //number of inputs
-int numInputs = 4;
+int numInputs = 7;
 //input array
-char *inputs[4] = {help, close, start, end};
+char *inputs[7] = {help, close, start, end, makeNew, entry, daily};
 
 
 //help input
 void appHelp(){
 	printf("\nThe following are available functions:\n\n"
 		"'close' : closes the program\n"
-		"'start' : starts a study session\n'"
-		"end' : ends a started study session\n\n");
+		"'start' : starts a study session\n"
+		"'end' : ends a started study session\n"
+		"'makenew' : creates a new studyset\n"
+		"'entry' : creates a new entry in a studyset\n"
+		"'daily' : begins review of daily sets \n\n");
 }
 
 //close input
 void appClose(){
 	printf("\nclosing the program\n\n");
 	exit(0);
+}
+
+int validate_identifier(const char *s) {
+	if (!s || !*s) return 0;
+	for (const char *p = s; *p; p++) {
+		if (!isalnum(*p) && *p != '_') return 0;
+	}
+	return 1;
+}
+
+int makenew(){
+	//gets new subject name from user to name table
+	
+	int conf = 1;
+	char name[150];
+	while (conf) {
+		//gets input from user.
+		printf("\nEnter a name for your new studyset.\n\n");
+
+		fgets(operation, 150, stdin);
+
+		//removes the \n at the end of the input
+		int i = 0;
+		while(*(operation+i) != '\n'){
+				i++;
+		}
+		*(operation+i) = '\0';
+		
+		//prints the input to the array 'name'
+		snprintf(name, sizeof(operation), "%s", operation);
+		
+		//sanitize entry so that it can only include letters, numbers, and underscores.
+		if (validate_identifier(name)) { 
+
+			printf("\nYour entry was: '%s'. To finalize, enter 'Y' or 'y'. To quit, enter 'Q' or 'q'. Enter any input to try again.\n\n", name);
+
+			//confirms the input
+			fgets(operation, 150, stdin);
+
+			if(*operation == 'y' || *operation == 'Y'){
+				conf = 0;
+			}
+			else if(*operation == 'Q' || *operation == 'q'){
+				return 0;
+			}
+		}
+		else{
+			printf("Your entry may only include numbers, letters, and underscores. Please try again.");
+		}
+	}
+	
+	//generates the sql code
+	char sql[512];
+	char *err_msg = NULL;
+
+	//prints the sql command to sql
+	snprintf(sql, sizeof(sql),
+		"CREATE TABLE %s ("
+		"id INTEGER PRIMARY KEY AUTOINCREMENT,"
+		"question TEXT NOT NULL,"
+		"answer TEXT,"
+		"solution TEXT,"
+		"nextStudy REAL"
+		");",
+		name
+	);
+	//note that the nextStudy REAL line is a stored JULIAN day.
+	
+	//executes sql
+	int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
+
+        if (rc != SQLITE_OK) {
+                sqlite3_free(err_msg);
+                sqlite3_close(db);
+                return 1;
+        }
+
+	return rc;
 }
 
 //starts the clock by creating a new database entry.
@@ -231,6 +317,15 @@ void parse(char *str){
 			break;
 		case 3: 
 			endClock();
+			break;
+		case 4:
+			makenew();
+			break;
+		case 5:
+			//entry
+			break;
+		case 6:
+			//daily
 			break;
                 default: 
 			printf("\nThere is no matching input. Please retry or enter 'help' for more options.\n\n");
