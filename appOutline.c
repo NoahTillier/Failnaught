@@ -9,6 +9,10 @@
 sqlite3 *db;
 //buffer to store user input
 char operation[150];
+//string used to store active topic
+char topic[150];
+//used for boolean functions
+int external_boolean;
 //valid inputs
 char help[10] = "help\n";
 char close[10] = "close\n";
@@ -18,11 +22,12 @@ char makeNew[10] = "makenew\n";
 char list[10] = "list\n";
 char entry[10] = "entry\n";
 char daily[10] = "daily\n";
+char open[10] = "open\n";
 
 //number of inputs
-int numInputs = 8;
+int numInputs = 9;
 //input array
-char *inputs[8] = {help, close, start, end, makeNew, list, entry, daily};
+char *inputs[9] = {help, close, start, end, makeNew, list, entry, daily, open};
 
 
 //help input
@@ -34,7 +39,8 @@ void appHelp(){
 		"'makenew' : creates a new studyset\n"
 		"'list' : lists all your current studysets\n"
 		"'entry' : creates a new entry in a studyset\n"
-		"'daily' : begins review of daily sets \n\n");
+		"'daily' : begins review of daily sets \n"
+		"'open' : opens a study set for structured study or card entry \n\n");
 }
 
 //close input
@@ -307,6 +313,16 @@ int callback(void *NotUsed, int argc, char **argv, char **colName) {
 	return 0;
 }
 
+int callback_v2(void *NotUsed, int argc, char **argv, char **colName) {
+	if ( argc = 1 ){
+		external_boolean = 1;
+	}
+	else {
+		external_boolean = 0;
+	}
+	return 0;
+}
+
 int listTopics(){
 	char *err_msg = NULL;
 	const char *sql = "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT IN ('sessions', 'sqlite_sequence');"; 
@@ -318,6 +334,58 @@ int listTopics(){
                 sqlite3_free(err_msg);
                 return 1;
         }
+
+	return 0;
+}
+
+int openTopic(){
+	char *err_msg = NULL;
+	char sql[512];	
+		
+	printf("\nWhich topic do you want to study?\n\n");
+	
+	//gets input
+	fgets(operation, 150, stdin);
+	//removes new line statement at the end of operation
+	int i = 0;
+        while(*(operation+i) != '\n'){
+		i++;
+        }
+        *(operation+i) = '\0';
+	//removes new line at the end of the operation	
+	
+	//prepares the statement
+	snprintf(sql, sizeof(sql),
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT IN ('sessions', 'sqlite_sequence') AND name IN ('%s');",
+                operation
+        );
+	
+	//resets the boolean so that the value is reliable
+	external_boolean = 0;
+	//runs the program
+	int rc = sqlite3_exec(db, sql, callback_v2, NULL, &err_msg);
+	
+	if (rc != SQLITE_OK) {
+                fprintf(stderr, "SQL error: %s\n", err_msg);
+                sqlite3_free(err_msg);
+                return 1;
+        }
+
+	//prints if the thing is a valid entry
+	if(external_boolean){
+		//copies operation to topic
+		int i = 0;
+		while(*(operation + i) != '\0'){
+			topic[i] = operation[i];
+			i++;
+		}
+		topic[i] = '\0';
+
+		printf("%s has been successfully openned\n\n", operation);
+	}
+	else{
+		printf("%s is not a valid entry\n\n", operation);
+	}
 
 	return 0;
 }
@@ -354,6 +422,9 @@ void parse(char *str){
 			break;
 		case 7:
 			//daily
+			break;
+		case 8: 
+			openTopic();
 			break;
                 default: 
 			printf("\nThere is no matching input. Please retry or enter 'help' for more options.\n\n");
@@ -408,3 +479,4 @@ int main(){
 	}
 	exit(0);
 }
+
