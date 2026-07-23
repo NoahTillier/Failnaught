@@ -390,6 +390,44 @@ int openTopic(){
 	return 0;
 }
 
+int makeEntry(){
+	//checks that there is a valid topic
+	if(topic[0] == '\0'){
+		printf("\nUse 'open' to open a topic or 'makenew' to make a new topic.\n\n");
+		return 0;
+	}
+	//if the topic exists, then the rest of the code will execute
+	char sql[5000];
+	char *err_msg = NULL;
+	char question[1024];
+	char answer[1024];
+	char solution[2048];
+	
+	printf("\nWhat question do you want to ask?\n\nFailnaught: ");
+	fgets(question, 1024, stdin);
+
+	printf("\nWhat is the answer to your question?\n\nFailnaught: ");
+	fgets(answer, 1024, stdin);
+	
+	printf("\nIf one exists, what is the solution to your question?\n\nFailnaught: ");
+	fgets(solution, 2048, stdin);
+
+	snprintf(sql, sizeof(sql), 
+		"INSERT INTO %s (question, answer, solution, nextStudy) VALUES ('%s', '%s', '%s', julianday('now'))",
+		topic, question, answer, solution
+	);
+
+	int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
+
+	if (rc != SQLITE_OK) {
+                sqlite3_free(err_msg);
+                sqlite3_close(db);
+                return 1;
+        }
+
+	return rc;
+}
+
 //The parse method compares the input to a list of possible inputs,
 //calling the corresponding function.
 //If the input is invalid, it prints 'invalid input'
@@ -418,7 +456,7 @@ void parse(char *str){
 			listTopics();
 			break;
 		case 6:
-			//entry
+			makeEntry();
 			break;
 		case 7:
 			//daily
