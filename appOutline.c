@@ -470,6 +470,34 @@ void parse(char *str){
         }
 }
 
+//implements the SM-2 Algorithm
+//takes the ID of the entry for lookup, user grade q, repetition number n, easiness factor EF, interval I
+int study(int id, int q, int *n, float *ef, int *interval){
+	if (q >= 3){
+		if( *n == 0 ) {
+			*interval = 1;		
+		}
+		else if ( *n == 1){
+			*interval = 6;
+		}
+		else{
+			*interval = (*interval) * (*ef);
+		}
+		*n = *n + 1;
+	}
+	else{
+		*n = 0;
+		*interval = 1;
+	}
+
+	*ef = *ef + (0.1 - (5.0 - q) * (0.08 + (5 - q) * 0.02));
+	if( *ef < 1.3 ){
+		*ef = 1.3;
+	}
+
+	return 0;
+}
+
 //main method
 int main(){
 	//creates an error message for sqlite functions
