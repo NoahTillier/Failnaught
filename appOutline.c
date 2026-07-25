@@ -58,7 +58,7 @@ int validate_identifier(const char *s) {
 }
 
 int makenew(){
-	//gets new subject name from user to name table
+	//gets new topic name from user to name table
 	
 	int conf = 1;
 	char name[150];
@@ -109,12 +109,16 @@ int makenew(){
 		"question TEXT NOT NULL,"
 		"answer TEXT,"
 		"solution TEXT,"
-		"nextStudy REAL"
+		"nextStudy REAL,"
+		"interval INTEGER DEFAULT 0,"
+		"n INTEGER DEFAULT 0,"
+		"ef REAL DEFAULT 2.5"
 		");",
 		name
 	);
 	//note that the nextStudy REAL line is a stored JULIAN day.
-	
+	//note as well that interval, n, and ef are defined for the SM-2 Algorithm
+
 	//executes sql
 	int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
 
