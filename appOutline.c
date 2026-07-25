@@ -475,8 +475,8 @@ void parse(char *str){
 }
 
 //implements the SM-2 Algorithm
-//takes the ID of the entry for lookup, user grade q, repetition number n, easiness factor EF, interval I
-int study(int id, int q, int *n, float *ef, int *interval){
+//takes the user grade q, repetition number n, easiness factor ef, interval 
+int study(int q, int *n, float *ef, int *interval){
 	if (q >= 3){
 		if( *n == 0 ) {
 			*interval = 1;		
