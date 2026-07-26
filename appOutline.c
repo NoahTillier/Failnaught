@@ -158,7 +158,7 @@ int startClock(){
 	if( rc != SQLITE_OK) {
         	printf("Failed to prepare statement: %s\n", sqlite3_errmsg(db));
         	return rc;
-    	}
+    }
 
 	//bind parameters
 	sqlite3_bind_int(stmt, 1, startEnergy);
@@ -184,7 +184,6 @@ int endClock(){
 		"UPDATE sessions SET "
 			"end = CURRENT_TIMESTAMP, "
 			"endenergy = ?, "
-			"difficulty = ?, "
 			"focusdepth = ?, "
 			"status = 1 "	
 		"WHERE "
@@ -230,7 +229,6 @@ int endClock(){
 
 	//otherwise, begins the endfun
 	int endenergy = -1;
-	int difficulty = -1;
 	int focusdepth = -1;
 
 	//collects the endenergy value
@@ -242,19 +240,6 @@ int endClock(){
 		
 		//preforms input validation
 		if (sscanf(operation, "%d", &endenergy) != 1 || (endenergy < 1 || endenergy > 10)){
-			printf("Invalid input. Try again.\n\n");
-		}
-	}
-
-	//collects the difficulty value
-	while(difficulty < 0 || difficulty > 5){
-		printf("\nEnter a number corresponding to the difficulty of the activity you were doing. Estimate a weighted average if necessary.\n 0 = complete failure to recall information.\n 1 = incorrect recall, but the content felt familiar.\n 2 = incorrect recall, but the content seems easy to remember.\n 3 = new content or correct recall, but the activity required significant effort to recall.\n 4 = correct recall, after some hesitation.\n 5 = correct with perfect recall. \n\nFailnaught: ");
-		
-		//collects input
-		fgets(operation, 150, stdin);
-
-		//preforms input validation
-		if(sscanf(operation, "%d", &difficulty) != 1 || (difficulty < 0 || difficulty > 5)){
 			printf("Invalid input. Try again.\n\n");
 		}
 	}
@@ -283,8 +268,7 @@ int endClock(){
 	}
 
 	sqlite3_bind_int(stmt, 1, endenergy);
-	sqlite3_bind_int(stmt, 2, difficulty);
-	sqlite3_bind_int(stmt, 3, focusdepth);
+	sqlite3_bind_int(stmt, 2, focusdepth);
 	
 	//runs the line
 	sqlite3_step(stmt);
@@ -476,7 +460,7 @@ void parse(char *str){
 
 //implements the SM-2 Algorithm
 //takes the user grade q, repetition number n, easiness factor ef, interval 
-int study(int q, int *n, float *ef, int *interval){
+int studyhelper(int q, int *n, float *ef, int *interval){
 	if (q >= 3){
 		if( *n == 0 ) {
 			*interval = 1;		
@@ -502,8 +486,124 @@ int study(int q, int *n, float *ef, int *interval){
 	return 0;
 }
 
+int study(){
+	//gets the top priority item from the current topic (keeps ID)
+	//priority is determined by the length of time past "next study", with the items with the most time being shown first
+	char sql[256];
+	char *err_msg = NULL;
+
+	//gets the newest value.
+	snprintf(sql, sizeof(sql), 
+		"SELECT * FROM %s WHERE date(nextStudy) <= date(julianday('now')) ORDER BY nextStudy ASC LIMIT 1;",
+		topic
+	);
+
+	//prepares the statement
+	sqlite3_stmt *stmt;
+	int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, err_msg);
+	if(rc != SQLITE_OK){
+		printf("Failed to prepare statement: %s\n", sqlite3_errmsg(db));
+        return rc;
+	}
+
+	//gets the first row
+	rc = sqlite3_step(stmt);
+	if(rc != SQLITE_ROW){
+		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		return rc;
+	}
+
+	//gets ID
+	int id = sqlite3_column_int(stmt, 0);
+	//gets question, answer, and solution
+	char *question = sqlite3_column_text(stmt, 1);
+	char *answer = sqlite3_column_text(stmt, 2);
+	char *solution = sqlite3_column_text(stmt, 3);
+	
+	printf("Prompt:\n%s\n\n", question);
+
+	//gets the next prompt
+	char c;
+	do {
+		printf("Enter 'A' for answer and 'S' for the solution\n\n");
+		c = getchar();
+	}
+	while(c != 'A' || c != 'a' || c != 'S' || c != 's');
+	
+	//prints desired output
+	if (operation[0] == 'A' || operation[0] == 'a'){
+		printf("Answer:\n%s\n\n", answer);
+
+		printf("Would you like the solution? Enter 'S' or 's'\n\n");
+		c = getchar();
+		if(c == 's' || c == 'S'){
+			printf("Solution:\n%s\n\n", solution);
+		}
+	}
+	else{
+		printf("Solution:\n%s\n\n", solution);
+		
+		printf("Would you like the answer? Enter 'A' or 'a'\n\n");
+		c = getchar();
+		if(c == 'a' || c == 'A'){
+			printf("Solution:\n%s\n\n", solution);
+		}
+	}
+
+	//collects q (easiness factor)
+	int q = -1;
+	while(q < 0 || q > 5){
+		printf("\nEnter a number corresponding to the difficulty of the problem.\n 0 = complete failure to recall information.\n 1 = incorrect recall, but the content felt familiar.\n 2 = incorrect recall, but the content seems easy to remember.\n 3 = new content or correct recall, but the activity required significant effort to recall.\n 4 = correct recall, after some hesitation.\n 5 = correct with perfect recall. \n\nFailnaught: ");
+		
+		//collects input
+		fgets(operation, 150, stdin);
+
+		//preforms input validation
+		if(sscanf(operation, "%d", &q) != 1 || (q < 0 || q > 5)){
+			printf("Invalid input. Try again.\n\n");
+		}
+	}
+
+	//collects n, ef, interval from table
+	int interval = sqlite_column_int(stmt, 5);
+	int n = sqlite3_column_int(stmt, 6);
+	double ef = sqlite3_column_double(stmt, 7);
+
+	//finalizes the old statement
+	sqlite3_finalize(stmt);
+
+	//runs the helper method
+	studyhelper(q, &n, &ef, &interval);
+
+	//updates all values (nextStudy, n, ef, interval)
+	snprintf(sql, sizeof(sql), 
+		"UPDATE %s SET nextStudy = nextStudy + %d, interval = %d, n = %d, ef = %f WHERE id = %d;",
+		topic, interval, interval, n, ef, id
+	);
+
+	//prepares the statement
+	int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, err_msg);
+	if(rc != SQLITE_OK){
+		printf("Failed to prepare statement: %s\n", sqlite3_errmsg(db));
+        return rc;
+	}
+
+	//executest the statement
+	rc = sqlite3_step(stmt);
+	if(rc != SQLITE_ROW){
+		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		return rc;
+	}
+
+	sqlite3_finalize(stmt);
+
+	return 0;
+}
+
 //main method
 int main(){
+	//resets topic to '\0'
+	topic[0] = '\0';
 	//creates an error message for sqlite functions
 	char *err_msg = NULL;
 
