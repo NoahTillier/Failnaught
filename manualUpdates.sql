@@ -86,3 +86,6 @@
 -- LIMIT 1;
 
 -- ALTER TABLE sessions ADD COLUMN status INTEGER DEFAULT 0;
+
+--Selects rows from table %s and orders with the nextStudy with the lowest value at the top.
+-- SELECT * FROM %s WHERE date(nextStudy) <= date(julianday('now')) ORDER BY nextStudy ASC LIMIT 1;

@@ -444,6 +444,11 @@ int studyhelper(int q, int *n, double *ef, int *interval){
 }
 
 int study(){
+	//checks that a topic is open
+	if(topic[0] == '\0'){
+		printf("Please open a topic with 'open' to study a set\n\n");
+		return 0;
+	}
 	//gets the top priority item from the current topic (keeps ID)
 	//priority is determined by the length of time past "next study", with the items with the most time being shown first
 	char sql[256];
@@ -476,34 +481,34 @@ int study(){
 	const char *answer = sqlite3_column_text(stmt, 2);
 	const char *solution = sqlite3_column_text(stmt, 3);
 	
-	printf("Prompt:\n%s\n\n", question);
+	printf("\nPrompt:\n%s\n", question);
 
 	//gets the next prompt
 	do {
 		printf("Enter 'A' for answer and 'S' for the solution\n\n");
 		fgets(operation, 150, stdin);
 	}
-	while(operation[0] != 'A' || operation[0] != 'a' || operation[0] != 'S' || operation[0] != 's' && operation[1] != '\n');
+	while(operation[0] != 'A' && operation[0] != 'a' && operation[0] != 'S' && operation[0] != 's' && operation[1] != '\n');
 	
 	//prints desired output
 	if (operation[0] == 'A' || operation[0] == 'a'){
-		printf("Answer:\n\n%s\n\n", answer);
+		printf("\nAnswer:\n\n%s\n", answer);
 
 		printf("Would you like the solution? Enter 'S' or 's'\n\n");
 		
 		fgets(operation, 150, stdin);
 		if(operation[0] == 's' || operation[0] == 'S' && operation[1] == '\n'){
-			printf("Solution:\n\n%s\n\n", solution);
+			printf("Solution:\n\n%s\n", solution);
 		}
 	}
 	else{
-		printf("Solution:\n%s\n\n", solution);
+		printf("\nSolution:\n%s\n", solution);
 		
 		printf("Would you like the answer? Enter 'A' or 'a'\n\n");
 		
 		fgets(operation, 150, stdin);
 		if(operation[0] == 'a' || operation[0] == 'A' && operation[1] == '\n'){
-			printf("Solution:\n\n%s\n\n", solution);
+			printf("Answer:\n\n%s\n", answer);
 		}
 	}
 
@@ -547,7 +552,7 @@ int study(){
 
 	//executest the statement
 	rc = sqlite3_step(stmt);
-	if(rc != SQLITE_ROW){
+	if(rc != SQLITE_DONE){
 		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
 		return rc;
 	}
