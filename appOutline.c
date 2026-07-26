@@ -29,6 +29,14 @@ int numInputs = 9;
 //input array
 char *inputs[9] = {help, close, start, end, makeNew, list, entry, daily, open};
 
+//used for copying arguments out of callbacks
+typedef struct {
+    char **argv;     
+    int argc;
+} saveArguments;
+
+//global struct
+saveArguments saveArgs;
 
 //help input
 void appHelp(){
@@ -302,7 +310,7 @@ int callback(void *NotUsed, int argc, char **argv, char **colName) {
 }
 
 int callback_v2(void *NotUsed, int argc, char **argv, char **colName) {
-	if ( argc = 1 ){
+	if ( argc == 1 ){
 		external_boolean = 1;
 	}
 	else {
@@ -317,11 +325,11 @@ int listTopics(){
 	
 	int rc = sqlite3_exec(db, sql, callback, NULL, &err_msg);
 
-        if (rc != SQLITE_OK) {
-		fprintf(stderr, "SQL error: %s\n", err_msg);
-                sqlite3_free(err_msg);
-                return 1;
-        }
+    if (rc != SQLITE_OK) {
+	fprintf(stderr, "SQL error: %s\n", err_msg);
+            sqlite3_free(err_msg);
+			return 1;
+    }
 
 	return 0;
 }
@@ -346,7 +354,7 @@ int openTopic(){
 	snprintf(sql, sizeof(sql),
                 "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT IN ('sessions', 'sqlite_sequence') AND name IN ('%s');",
                 operation
-        );
+    );
 	
 	//resets the boolean so that the value is reliable
 	external_boolean = 0;
@@ -357,7 +365,7 @@ int openTopic(){
                 fprintf(stderr, "SQL error: %s\n", err_msg);
                 sqlite3_free(err_msg);
                 return 1;
-        }
+    }
 
 	//prints if the thing is a valid entry
 	if(external_boolean){
@@ -470,8 +478,8 @@ int study(){
 	//gets the first row
 	rc = sqlite3_step(stmt);
 	if(rc != SQLITE_ROW){
-		printf("There is no question available for study\n");
-		return rc;
+		printf("There is no question available for study.\n");
+		return 1;
 	}
 
 	//gets ID
@@ -562,6 +570,68 @@ int study(){
 	return 0;
 }
 
+int callback_daily(void *NotUsed, int argc, char **argv, char **colName) {
+	g_args.argc = argc;
+	g_args.argv = malloc(sizeof(char*) * argc);
+
+	for (int i = 0; i < argc; i++){
+		g_args.argv[i] = strdup(argv_input[i]);
+	}
+	
+	return 0;
+
+	char *copy = malloc(strlen(argv[0]) + 1);
+	strcpy(copy, argv[0]);
+
+	//store the pointer in the context
+	ctx->topics[ctx->count++] = copy;
+
+	return 0;
+	
+	for (int i = 0; i < argc; i++) {
+		
+		//sets the topic first
+		snprintf(topic, sizeof(topic), "%s", argv[i]);
+		
+		//allows the user to skip the topic
+		printf("To begin studying %s, press enter. To skip it this time, enter any other input.\n\n", topic);
+		fgets(operation, 150, stdin);
+		if(operation[0] == '\n'){
+
+			//calls study multiple times until it returns 1
+			//note that study should remove 1 element from the list of daily items per run and can not return 1 prematurely.
+			while (study() != 1){
+				//allows the user to end the topic study prematurely
+				printf("To continue with this topic, enter.\n\n");
+
+				fgets(operation, 150, stdin);
+				if(operation[0] != '\n'){
+					break;
+				}
+			}
+			printf("You have ended your study of %s, or there is no more content to study from %s at this time.\n", topic, topic);
+		}
+	}
+	//resets topic
+	topic[0] = '\0';
+	return 0;
+}
+
+int dailyStudy(){
+	char *err_msg = NULL;
+	const char *sql = "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT IN ('sessions', 'sqlite_sequence');"; 
+	
+	int rc = sqlite3_exec(db, sql, callback_daily, NULL, &err_msg);
+
+    if (rc != SQLITE_OK) {
+	fprintf(stderr, "SQL error special: %s\n", err_msg);
+        sqlite3_free(err_msg);
+		return 1;
+    }
+
+	return 0;
+}
+
 //The parse method compares the input to a list of possible inputs,
 //calling the corresponding function.
 //If the input is invalid, it prints 'invalid input'
@@ -593,7 +663,7 @@ void parse(char *str){
 			makeEntry();
 			break;
 		case 7:
-			study();
+			dailyStudy();
 			break;
 		case 8: 
 			openTopic();
