@@ -465,7 +465,7 @@ int study(){
 	//gets the first row
 	rc = sqlite3_step(stmt);
 	if(rc != SQLITE_ROW){
-		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		printf("There is no question available for study\n");
 		return rc;
 	}
 
@@ -479,30 +479,31 @@ int study(){
 	printf("Prompt:\n%s\n\n", question);
 
 	//gets the next prompt
-	char c;
 	do {
 		printf("Enter 'A' for answer and 'S' for the solution\n\n");
-		c = getchar();
+		fgets(operation, 150, stdin);
 	}
-	while(c != 'A' || c != 'a' || c != 'S' || c != 's');
+	while(operation[0] != 'A' || operation[0] != 'a' || operation[0] != 'S' || operation[0] != 's' && operation[1] != '\n');
 	
 	//prints desired output
 	if (operation[0] == 'A' || operation[0] == 'a'){
-		printf("Answer:\n%s\n\n", answer);
+		printf("Answer:\n\n%s\n\n", answer);
 
 		printf("Would you like the solution? Enter 'S' or 's'\n\n");
-		c = getchar();
-		if(c == 's' || c == 'S'){
-			printf("Solution:\n%s\n\n", solution);
+		
+		fgets(operation, 150, stdin);
+		if(operation[0] == 's' || operation[0] == 'S' && operation[1] == '\n'){
+			printf("Solution:\n\n%s\n\n", solution);
 		}
 	}
 	else{
 		printf("Solution:\n%s\n\n", solution);
 		
 		printf("Would you like the answer? Enter 'A' or 'a'\n\n");
-		c = getchar();
-		if(c == 'a' || c == 'A'){
-			printf("Solution:\n%s\n\n", solution);
+		
+		fgets(operation, 150, stdin);
+		if(operation[0] == 'a' || operation[0] == 'A' && operation[1] == '\n'){
+			printf("Solution:\n\n%s\n\n", solution);
 		}
 	}
 
@@ -587,7 +588,7 @@ void parse(char *str){
 			makeEntry();
 			break;
 		case 7:
-			//daily
+			study();
 			break;
 		case 8: 
 			openTopic();
