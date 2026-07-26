@@ -415,49 +415,6 @@ int makeEntry(){
 
 	return rc;
 }
-
-//The parse method compares the input to a list of possible inputs,
-//calling the corresponding function.
-//If the input is invalid, it prints 'invalid input'
-void parse(char *str){
-        int i = 0;
-        while(i < numInputs && (equalsStr(str, inputs[i]) != 1)){
-		i++;
-        }
-        switch(i){
-                case 0: 
-			appHelp();
-			break;
-                case 1: 
-			appClose();
-			break;
-		case 2:
-			startClock();
-			break;
-		case 3: 
-			endClock();
-			break;
-		case 4:
-			makenew();
-			break;
-		case 5:
-			listTopics();
-			break;
-		case 6:
-			makeEntry();
-			break;
-		case 7:
-			//daily
-			break;
-		case 8: 
-			openTopic();
-			break;
-                default: 
-			printf("\nThere is no matching input. Please retry or enter 'help' for more options.\n\n");
-			break;
-        }
-}
-
 //implements the SM-2 Algorithm
 //takes the user grade q, repetition number n, easiness factor ef, interval 
 int studyhelper(int q, int *n, double *ef, int *interval){
@@ -599,6 +556,48 @@ int study(){
 	return 0;
 }
 
+//The parse method compares the input to a list of possible inputs,
+//calling the corresponding function.
+//If the input is invalid, it prints 'invalid input'
+void parse(char *str){
+        int i = 0;
+        while(i < numInputs && (equalsStr(str, inputs[i]) != 1)){
+		i++;
+        }
+        switch(i){
+                case 0: 
+			appHelp();
+			break;
+                case 1: 
+			appClose();
+			break;
+		case 2:
+			startClock();
+			break;
+		case 3: 
+			endClock();
+			break;
+		case 4:
+			makenew();
+			break;
+		case 5:
+			listTopics();
+			break;
+		case 6:
+			makeEntry();
+			break;
+		case 7:
+			//daily
+			break;
+		case 8: 
+			openTopic();
+			break;
+                default: 
+			printf("\nThere is no matching input. Please retry or enter 'help' for more options.\n\n");
+			break;
+        }
+}
+
 //main method
 int main(){
 	//resets topic to '\0'
@@ -637,14 +636,13 @@ int main(){
 	}
 
 	printf("Enter 'help' for a list of available commands.\n\n");
-	int cont = 10;
+	//note that this is an infinite loop, which is intentional.
+	int cont = 1;
 	while(cont){
 		printf("Failnaught: ");
 		char *p = fgets(operation, 150, stdin);
 
-		parse(p);
-
-		cont--;	
+		parse(p);	
 	}
 	exit(0);
 }
