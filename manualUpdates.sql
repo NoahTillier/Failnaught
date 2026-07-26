@@ -89,3 +89,6 @@
 
 --Selects rows from table %s and orders with the nextStudy with the lowest value at the top.
 -- SELECT * FROM %s WHERE date(nextStudy) <= date(julianday('now')) ORDER BY nextStudy ASC LIMIT 1;
+-- SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT IN ('sessions', 'sqlite_sequence');
+-- SELECT * FROM %s WHERE date(nextStudy) <= date(julianday('now')) ORDER BY nextStudy ASC LIMIT 1;
+-- SELECT * FROM (SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT IN ('sessions', 'sqlite_sequence') WHERE date(nextStudy) <= date(julianday('now')) ORDER BY nextStudy ASC;

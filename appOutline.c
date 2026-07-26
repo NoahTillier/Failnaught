@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <sqlite3.h>
 #include <ctype.h>
+#include <string.h>
 
 //global variables
 
@@ -36,7 +37,7 @@ typedef struct {
 } saveArguments;
 
 //global struct
-saveArguments saveArgs;
+saveArguments saveArgs = {NULL, 0};
 
 //help input
 void appHelp(){
@@ -570,28 +571,35 @@ int study(){
 	return 0;
 }
 
+//called individually for each argv we want to save
 int callback_daily(void *NotUsed, int argc, char **argv, char **colName) {
-	g_args.argc = argc;
-	g_args.argv = malloc(sizeof(char*) * argc);
-
-	for (int i = 0; i < argc; i++){
-		g_args.argv[i] = strdup(argv_input[i]);
-	}
+	//argc is always 1 when called with callback_daily
+	saveArgs.argc = saveArgs.argc + argc;
+	//increases the size of the array to accomodate new values
+	saveArgs.argv = realloc(saveArgs.argv, sizeof(char*) * saveArgs.argc);
+	//populates the space 
+	saveArgs.argv[saveArgs.argc - 1] = strdup(argv[0]);
 	
 	return 0;
+}
 
-	char *copy = malloc(strlen(argv[0]) + 1);
-	strcpy(copy, argv[0]);
-
-	//store the pointer in the context
-	ctx->topics[ctx->count++] = copy;
-
-	return 0;
+int dailyStudy(){
+	char *err_msg = NULL;
+	const char *sql = "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT IN ('sessions', 'sqlite_sequence');"; 
 	
-	for (int i = 0; i < argc; i++) {
+	int rc = sqlite3_exec(db, sql, callback_daily, NULL, &err_msg);
+
+    if (rc != SQLITE_OK) {
+	fprintf(stderr, "SQL error: %s\n", err_msg);
+        sqlite3_free(err_msg);
+		return 1;
+    }
+
+	//accesses the argc and argv in the global struct saveArguments
+	for (int i = 0; i < saveArgs.argc; i++) {
 		
 		//sets the topic first
-		snprintf(topic, sizeof(topic), "%s", argv[i]);
+		snprintf(topic, sizeof(topic), "%s", saveArgs.argv[i]);
 		
 		//allows the user to skip the topic
 		printf("To begin studying %s, press enter. To skip it this time, enter any other input.\n\n", topic);
@@ -612,22 +620,19 @@ int callback_daily(void *NotUsed, int argc, char **argv, char **colName) {
 			printf("You have ended your study of %s, or there is no more content to study from %s at this time.\n", topic, topic);
 		}
 	}
+
+	//frees the memory
+	for(int i = 0; i < saveArgs.argc; i++){
+		free(saveArgs.argv[i]);
+	}
+	free(saveArgs.argv);
+
+	//resets the argc and argv
+	saveArgs.argc = 0;
+	saveArgs.argv = NULL;
+
 	//resets topic
 	topic[0] = '\0';
-	return 0;
-}
-
-int dailyStudy(){
-	char *err_msg = NULL;
-	const char *sql = "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT IN ('sessions', 'sqlite_sequence');"; 
-	
-	int rc = sqlite3_exec(db, sql, callback_daily, NULL, &err_msg);
-
-    if (rc != SQLITE_OK) {
-	fprintf(stderr, "SQL error special: %s\n", err_msg);
-        sqlite3_free(err_msg);
-		return 1;
-    }
 
 	return 0;
 }
