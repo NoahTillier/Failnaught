@@ -460,7 +460,7 @@ void parse(char *str){
 
 //implements the SM-2 Algorithm
 //takes the user grade q, repetition number n, easiness factor ef, interval 
-int studyhelper(int q, int *n, float *ef, int *interval){
+int studyhelper(int q, int *n, double *ef, int *interval){
 	if (q >= 3){
 		if( *n == 0 ) {
 			*interval = 1;		
@@ -490,7 +490,6 @@ int study(){
 	//gets the top priority item from the current topic (keeps ID)
 	//priority is determined by the length of time past "next study", with the items with the most time being shown first
 	char sql[256];
-	char *err_msg = NULL;
 
 	//gets the newest value.
 	snprintf(sql, sizeof(sql), 
@@ -500,7 +499,7 @@ int study(){
 
 	//prepares the statement
 	sqlite3_stmt *stmt;
-	int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, err_msg);
+	int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
 	if(rc != SQLITE_OK){
 		printf("Failed to prepare statement: %s\n", sqlite3_errmsg(db));
         return rc;
@@ -516,9 +515,9 @@ int study(){
 	//gets ID
 	int id = sqlite3_column_int(stmt, 0);
 	//gets question, answer, and solution
-	char *question = sqlite3_column_text(stmt, 1);
-	char *answer = sqlite3_column_text(stmt, 2);
-	char *solution = sqlite3_column_text(stmt, 3);
+	const char *question = sqlite3_column_text(stmt, 1);
+	const char *answer = sqlite3_column_text(stmt, 2);
+	const char *solution = sqlite3_column_text(stmt, 3);
 	
 	printf("Prompt:\n%s\n\n", question);
 
@@ -565,7 +564,7 @@ int study(){
 	}
 
 	//collects n, ef, interval from table
-	int interval = sqlite_column_int(stmt, 5);
+	int interval = sqlite3_column_int(stmt, 5);
 	int n = sqlite3_column_int(stmt, 6);
 	double ef = sqlite3_column_double(stmt, 7);
 
@@ -582,7 +581,7 @@ int study(){
 	);
 
 	//prepares the statement
-	int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, err_msg);
+	rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
 	if(rc != SQLITE_OK){
 		printf("Failed to prepare statement: %s\n", sqlite3_errmsg(db));
         return rc;
