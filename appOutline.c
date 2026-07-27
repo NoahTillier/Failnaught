@@ -58,6 +58,57 @@ void appClose(){
 	exit(0);
 }
 
+//getArgs takes a pointer to a string as input and parses it into a number of valid arguments
+//It separates items by spaces and removes new-line characters
+int getArgs(char *str){
+	int numArgs = 0;
+	int index = 0;
+	//finds the first non-space character
+	while(*str == ' '){
+		str++;
+	}
+	//returns if there are no arguments
+	if(*str == '\n'){
+		return 0;
+	}
+	//there is at least 1 non-space, non-new-line, non-null character so we can increment index by 1
+	index++;
+	//loops until the end of string to count the number of non-consecutive spaces
+	while(*(str+index) != '\0'){
+		//checks that the character is a space (guarenteed either the first or non-consecutive)
+		if((*(str+index) == ' ' || *(str+index) == '\n') && (*(str+index-1) != ' ' &&  *(str+index-1) != '\0') ){
+			numArgs++;
+			*(str+index) = '\0';	//this changes the input string
+		}
+		index++;
+	}
+	//shortens index to be the length of the last relevant '\0' character
+	//note that there is at least 1 non-space, non-newline, non-null character
+       	while(*(str+index) == '\0' || *(str+index) == '\n' || *(str+index) == ' '){
+		index--;
+	}
+	//note that at the end, index is equal to the index of the last non-space, non-newline, non-null character
+	//saves number of arguments
+	saveArgs.argc = numArgs;
+	//uses Malloc to allocate space in memory for argc and argv of saveArgs
+	saveArgs.argv = malloc(sizeof(char *) * numArgs);
+	//saves the first argv
+	int saveInd = 0;
+	saveArgs.argv[saveInd] = strdup(str);
+	saveInd++;
+	//loops through the rest (does not include the last null-character)
+	//the loop will not run if the input is only one character (which is what we want)
+	for(int i = 0; i < index; i++){
+		//saves the next argument (without white space)
+		if((*(str+i) == '\0' && *(str+i+1) != ' ') || (*(str+i) == ' ' && *(str+i+1) != ' ')){
+			saveArgs.argv[saveInd] = strdup((str + i + 1));
+			saveInd++;
+		}
+	}	
+	//returns 0
+	return 0;
+}
+
 int validate_identifier(const char *s) {
 	if (!s || !*s) return 0;
 	for (const char *p = s; *p; p++) {
@@ -410,6 +461,26 @@ int makeEntry(){
 	fgets(solution, 2048, stdin);
 
 	snprintf(sql, sizeof(sql), 
+		"INSERT INTO %s (question, answer, solution, nextStudy) VALUES (?, ?, ?, julianday('now'))",
+		topic
+	);
+
+	//begins the sqlite
+	sqlite3_stmt *stmt;
+	int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+
+	if( rc != SQLITE_OK) {
+        	printf("Failed to prepare statement: %s\n", sqlite3_errmsg(db));
+        	return rc;
+    }
+
+	//binds the text
+	sqlite3_bind_text(stmt, 1, question, -1, SQLITE_TRANSIENT);
+	sqlite3_bind_text(stmt, 2, answer, -1, SQLITE_TRANSIENT);
+	sqlite3_bind_text(stmt, 3, solution, -1, SQLITE_TRANSIENT);
+
+	/*
+	snprintf(sql, sizeof(sql), 
 		"INSERT INTO %s (question, answer, solution, nextStudy) VALUES ('%s', '%s', '%s', julianday('now'))",
 		topic, question, answer, solution
 	);
@@ -421,7 +492,13 @@ int makeEntry(){
                 sqlite3_close(db);
                 return 1;
         }
+	*/
 
+	rc = sqlite3_step(stmt);
+
+	if(rc != SQLITE_DONE){
+		printf("There has been an error");
+	}
 	return rc;
 }
 //implements the SM-2 Algorithm
@@ -681,6 +758,30 @@ void parse(char *str){
 
 //main method
 int main(){
+	
+	//testing for getArgs
+	printf("Enter a string: \n");
+	fgets(operation, 150, stdin);
+	getArgs(operation);
+
+	printf("There are %d arguments.", saveArgs.argc);
+	for(int i = 0; i < saveArgs.argc; i++){
+		printf("Argument %d is: %s", i, saveArgs.argv[i]);
+	}
+
+	//frees the memory
+        for(int i = 0; i < saveArgs.argc; i++){
+                free(saveArgs.argv[i]);
+        }
+        free(saveArgs.argv);
+
+        //resets the argc and argv
+        saveArgs.argc = 0;
+        saveArgs.argv = NULL;
+
+	exit(0);
+
+	
 	//resets topic to '\0'
 	topic[0] = '\0';
 	//creates an error message for sqlite functions
