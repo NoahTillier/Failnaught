@@ -60,10 +60,104 @@ void appClose(){
 
 //getArgs takes a pointer to a string as input and parses it into a number of valid arguments
 //It separates items by spaces and removes new-line characters
+int getArgs_v2(char *str){
+	int numArgs = 0;
+	int index = 0;
+	int startSaveInd = 0;
+
+	//finds the first non-space character
+	while(*(str+index) == ' '){
+		index++;
+	}
+	//returns if there are no arguments
+	if(*(str+index) == '\n'){
+		return 0;
+	}
+	startSaveInd = index; //this is the new "index 0" of the string
+
+	//arguments are deliniated by spaces. The entry is terminated by a new-line and then a null character
+	//we have guarenteed that there is at least 1 valid character (non-space, non-newline, non-null)
+	int is_quoted = 0;
+	printf("%c, so ", *(str+index));
+	if(*(str+index) == '"'){
+		is_quoted = 1;
+	}
+	index++;
+	printf("is_quoted = %d\n", is_quoted);
+
+	//counts the number of arguments
+	char val = *(str+index);
+	while(val != '\0'){
+		//toggles the quoted boolean
+		if(val == '"'){
+			is_quoted = !is_quoted;
+		}
+		//may count an argument only if it is not quoted
+		if(!is_quoted){
+			if((val == ' ' || val == '\n') && (*(str+index-1) != ' ')){
+				numArgs++;
+			}
+		}
+		//increments
+		index++;
+		val = *(str+index);
+	}
+
+	//checks that the quotations are valid
+	if(is_quoted){
+		printf("Error: unclosed quotations");
+		return 1;
+	}
+
+	//saves numArgs
+	saveArgs.argc = numArgs;
+	//allocates space
+	saveArgs.argv = malloc(sizeof(char *) * numArgs);
+
+	//shortens index to be the length of the last relevant '\0' character
+	//note that there is at least 1 non-space, non-newline, non-null character
+    while(*(str+index) == '\0' || *(str+index) == '\n' || *(str+index) == ' '){
+		index--;
+	}
+	index++;
+
+	//saves the arguments to saveInd
+	int saveInd = 0;
+	//set is_quoted if the first value is in quotes
+	if(*(str+startSaveInd) == '"'){
+		is_quoted = 1;
+	}
+	val = *(str+startSaveInd);
+	printf("Starting the read loop\n");
+	printf("The value of is_quoted: %d\n", is_quoted);
+	for(int i = startSaveInd+1; i < index + 1; i++){
+		if(*(str+i) == '"'){
+			is_quoted = !is_quoted;
+			printf("The value of is_quoted: %d\n", is_quoted);
+		}
+		//may count an argument only if it is not quoted
+		if(!is_quoted){
+			printf("The character is %c, and", *(str+i));
+			printf("The last character is %c\n", *(str-1+i));
+			if(( *(str+i) == ' ' || *(str+i) == '\n') && (*(str+i-1) != ' ')){
+				saveArgs.argv[saveInd] = strndup((str+startSaveInd), (i - startSaveInd)*sizeof(char));
+				printf("Writing %s to index %d", saveArgs.argv[saveInd], saveInd);
+				saveInd++;
+				startSaveInd = i + 1;
+			}
+			if(*(str+i) == ' ' && *(str+i-1) == ' '){
+				startSaveInd = i + 1;
+			}
+		}
+	}
+	return 0;
+}
+
 int getArgs(char *str){
 	int numArgs = 0;
 	int index = 0;
 	//finds the first non-space character
+	printf("\nfinding first non-space character\n");
 	while(*str == ' '){
 		str++;
 	}
@@ -71,25 +165,52 @@ int getArgs(char *str){
 	if(*str == '\n'){
 		return 0;
 	}
+	printf("\nincrementing index\n");
 	//there is at least 1 non-space, non-new-line, non-null character so we can increment index by 1
 	index++;
+	//boolean for quotations. 1 if the loop is processing a quotation, 0 otherwise.
+	
+	int is_quoted = 0;
+	if(*str == '"'){
+		is_quoted = 1;
+	}
+	printf("\nThe is_quoted boolean is: %d\n", is_quoted);
 	//loops until the end of string to count the number of non-consecutive spaces
 	while(*(str+index) != '\0'){
-		//checks that the character is a space (guarenteed either the first or non-consecutive)
-		if((*(str+index) == ' ' || *(str+index) == '\n') && (*(str+index-1) != ' ' &&  *(str+index-1) != '\0') ){
-			numArgs++;
-			*(str+index) = '\0';	//this changes the input string
+		printf("starting loop\n");
+		//checks for closed quotations
+		if(*(str+index) == '"'){
+			is_quoted = !is_quoted;
+		}
+		printf("is_quoted: %d\n", is_quoted);
+		//does not alter spaces or newlines in quoted string
+		if(!is_quoted){
+			//checks that the character is a space (guarenteed either the first or non-consecutive)
+			if((*(str+index) == ' ' || *(str+index) == '\n') && (*(str+index-1) != ' ' &&  *(str+index-1) != '\0') ){
+				numArgs++;
+				printf("numArgs: %d; ", numArgs);
+				*(str+index) = '\0';	//this changes the input string
+				printf("Added null character.\n");
+			}
 		}
 		index++;
+		printf("incremented index\n");
 	}
+	if(is_quoted){
+		printf("Error: unclosed quotations");
+		return 1;
+	}
+	printf("Finished processing");
+
 	//shortens index to be the length of the last relevant '\0' character
 	//note that there is at least 1 non-space, non-newline, non-null character
-       	while(*(str+index) == '\0' || *(str+index) == '\n' || *(str+index) == ' '){
+    while(*(str+index) == '\0' || *(str+index) == '\n' || *(str+index) == ' '){
 		index--;
 	}
 	//note that at the end, index is equal to the index of the last non-space, non-newline, non-null character
 	//saves number of arguments
 	saveArgs.argc = numArgs;
+	
 	//uses Malloc to allocate space in memory for argc and argv of saveArgs
 	saveArgs.argv = malloc(sizeof(char *) * numArgs);
 	//saves the first argv
@@ -762,7 +883,7 @@ int main(){
 	//testing for getArgs
 	printf("Enter a string: \n");
 	fgets(operation, 150, stdin);
-	getArgs(operation);
+	getArgs_v2(operation);
 
 	printf("There are %d arguments.", saveArgs.argc);
 	for(int i = 0; i < saveArgs.argc; i++){
