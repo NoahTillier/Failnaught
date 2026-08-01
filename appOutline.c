@@ -15,15 +15,15 @@ char topic[150];
 //used for boolean functions
 int external_boolean;
 //valid inputs
-char help[10] = "help\n";
-char close[10] = "close\n";
-char start[10] = "start\n";
-char end[10] = "end\n";
-char makeNew[10] = "makenew\n";
-char list[10] = "list\n";
-char entry[10] = "entry\n";
-char daily[10] = "daily\n";
-char open[10] = "open\n";
+char help[10] = "help";
+char close[10] = "close";
+char start[10] = "start";
+char end[10] = "end";
+char makeNew[10] = "makenew";
+char list[10] = "list";
+char entry[10] = "entry";
+char daily[10] = "daily";
+char open[10] = "open";
 
 //number of inputs
 int numInputs = 9;
@@ -38,6 +38,19 @@ typedef struct {
 
 //global struct
 saveArguments saveArgs = {NULL, 0};
+
+//frees all data from the struct
+void reset_saveArgs(){
+	//frees the memory
+        for(int i = 0; i < saveArgs.argc; i++){
+                free(saveArgs.argv[i]);
+        }
+        free(saveArgs.argv);
+
+        //resets the argc and argv
+        saveArgs.argc = 0;
+        saveArgs.argv = NULL;
+}
 
 //help input
 void appHelp(){
@@ -78,12 +91,10 @@ int getArgs_v2(char *str){
 	//arguments are deliniated by spaces. The entry is terminated by a new-line and then a null character
 	//we have guarenteed that there is at least 1 valid character (non-space, non-newline, non-null)
 	int is_quoted = 0;
-	printf("%c, so ", *(str+index));
 	if(*(str+index) == '"'){
 		is_quoted = 1;
 	}
 	index++;
-	printf("is_quoted = %d\n", is_quoted);
 
 	//counts the number of arguments
 	char val = *(str+index);
@@ -105,7 +116,7 @@ int getArgs_v2(char *str){
 
 	//checks that the quotations are valid
 	if(is_quoted){
-		printf("Error: unclosed quotations");
+		printf("Error: unclosed quotations\n");
 		return 1;
 	}
 
@@ -116,7 +127,7 @@ int getArgs_v2(char *str){
 
 	//shortens index to be the length of the last relevant '\0' character
 	//note that there is at least 1 non-space, non-newline, non-null character
-    while(*(str+index) == '\0' || *(str+index) == '\n' || *(str+index) == ' '){
+    	while(*(str+index) == '\0' || *(str+index) == '\n' || *(str+index) == ' '){
 		index--;
 	}
 	index++;
@@ -128,20 +139,14 @@ int getArgs_v2(char *str){
 		is_quoted = 1;
 	}
 	val = *(str+startSaveInd);
-	printf("Starting the read loop\n");
-	printf("The value of is_quoted: %d\n", is_quoted);
 	for(int i = startSaveInd+1; i < index + 1; i++){
 		if(*(str+i) == '"'){
 			is_quoted = !is_quoted;
-			printf("The value of is_quoted: %d\n", is_quoted);
 		}
 		//may count an argument only if it is not quoted
 		if(!is_quoted){
-			printf("The character is %c, and", *(str+i));
-			printf("The last character is %c\n", *(str-1+i));
 			if(( *(str+i) == ' ' || *(str+i) == '\n') && (*(str+i-1) != ' ')){
 				saveArgs.argv[saveInd] = strndup((str+startSaveInd), (i - startSaveInd)*sizeof(char));
-				printf("Writing %s to index %d", saveArgs.argv[saveInd], saveInd);
 				saveInd++;
 				startSaveInd = i + 1;
 			}
@@ -839,70 +844,71 @@ int dailyStudy(){
 //calling the corresponding function.
 //If the input is invalid, it prints 'invalid input'
 void parse(char *str){
-        int i = 0;
-        while(i < numInputs && (equalsStr(str, inputs[i]) != 1)){
-		i++;
-        }
-        switch(i){
-                case 0: 
-			appHelp();
-			break;
-                case 1: 
-			appClose();
-			break;
-		case 2:
-			startClock();
-			break;
-		case 3: 
-			endClock();
-			break;
-		case 4:
-			makenew();
-			break;
-		case 5:
-			listTopics();
-			break;
-		case 6:
-			makeEntry();
-			break;
-		case 7:
-			dailyStudy();
-			break;
-		case 8: 
-			openTopic();
-			break;
-                default: 
-			printf("\nThere is no matching input. Please retry or enter 'help' for more options.\n\n");
-			break;
-        }
+    //loads arguments into saveArgs
+	int ret = getArgs_v2(str);
+	//statement checks that the arguments have been processed correctly
+	if(ret != 0 || saveArgs.argc == 0){
+		printf("\nPlease enter a valid string\n\n");
+	}
+	else{
+		int i = 0;
+    	while(i < numInputs && (equalsStr(saveArgs.argv[0], inputs[i]) != 1)){
+			i++;
+		}
+		if(saveArgs.argc == 1){
+			//resets saved Args
+			reset_saveArgs();
+        	switch(i){
+            	case 0: 
+					appHelp();
+					break;
+        	    case 1: 
+					appClose();
+					break;
+				case 2:
+					startClock();
+					break;
+				case 3: 
+					endClock();
+					break;
+				case 4:
+					makenew();
+					break;
+				case 5:
+					listTopics();
+					break;
+				case 6:
+					makeEntry();
+					break;
+				case 7:
+					dailyStudy();
+					break;
+				case 8: 
+					openTopic();
+					break;
+            	default: 
+					printf("\nThere is no matching input. Please retry or enter 'help' for more options.\n\n");
+					break;
+        	}
+		}
+		else{
+			//there are more than 1 argv
+			switch(i){
+				case 6:
+					//makes an entry
+					break;
+				case 8:
+					//opens a topic
+					break;
+			}
+			//resets the saveArgs parameters
+			reset_saveArgs();
+		}
+	}
 }
 
 //main method
 int main(){
-	
-	//testing for getArgs
-	printf("Enter a string: \n");
-	fgets(operation, 150, stdin);
-	getArgs_v2(operation);
-
-	printf("There are %d arguments.", saveArgs.argc);
-	for(int i = 0; i < saveArgs.argc; i++){
-		printf("Argument %d is: %s", i, saveArgs.argv[i]);
-	}
-
-	//frees the memory
-        for(int i = 0; i < saveArgs.argc; i++){
-                free(saveArgs.argv[i]);
-        }
-        free(saveArgs.argv);
-
-        //resets the argc and argv
-        saveArgs.argc = 0;
-        saveArgs.argv = NULL;
-
-	exit(0);
-
-	
 	//resets topic to '\0'
 	topic[0] = '\0';
 	//creates an error message for sqlite functions
