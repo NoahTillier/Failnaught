@@ -9,7 +9,7 @@
 //database
 sqlite3 *db;
 //buffer to store user input
-char operation[150];
+char operation[5000];
 //string used to store active topic
 char topic[150];
 //used for boolean functions
@@ -514,7 +514,7 @@ int listTopics(){
 
 int openTopic(){
 	char *err_msg = NULL;
-	char sql[512];	
+	char sql[5120];	
 		
 	printf("\nWhich topic do you want to study?\n\n");
 	
@@ -559,6 +559,46 @@ int openTopic(){
 	}
 	else{
 		printf("%s is not a valid entry\n\n", operation);
+	}
+
+	return 0;
+}
+
+int openTopic_v2(){
+	if(saveArgs.argc != 2){
+		printf("\nIncorrect number of arguments. Please try again.\n\n");
+		return 1;
+	}
+
+	char *err_msg = NULL;
+	char sql[512];	
+
+	//prepares the statement
+	snprintf(sql, sizeof(sql),
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT IN ('sessions', 'sqlite_sequence') AND name IN ('%s');",
+                saveArgs.argv[1]
+    );
+	
+	//resets the boolean so that the value is reliable
+	external_boolean = 0;
+	//runs the program
+	int rc = sqlite3_exec(db, sql, callback_v2, NULL, &err_msg);
+	
+	if (rc != SQLITE_OK) {
+                fprintf(stderr, "SQL error: %s\n", err_msg);
+                sqlite3_free(err_msg);
+                return 1;
+    }
+
+	//prints if the thing is a valid entry
+	if(external_boolean){
+		//copies operation to topic
+		strcpy(topic, saveArgs.argv[1]);
+		printf("%s has been successfully openned\n\n", saveArgs.argv[1]);
+	}
+	else{
+		printf("%s is not a valid entry\n\n", saveArgs.argv[1]);
+		return 1;
 	}
 
 	return 0;
@@ -898,7 +938,7 @@ void parse(char *str){
 					//makes an entry
 					break;
 				case 8:
-					//opens a topic
+					openTopic_v2();
 					break;
 			}
 			//resets the saveArgs parameters
