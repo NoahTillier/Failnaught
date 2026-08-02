@@ -564,8 +564,8 @@ int openTopic(){
 	return 0;
 }
 
-int openTopic_v2(){
-	if(saveArgs.argc != 2){
+int openTopic_v2(int argc, char* str){
+	if(argc != 2){
 		printf("\nIncorrect number of arguments. Please try again.\n\n");
 		return 1;
 	}
@@ -576,7 +576,7 @@ int openTopic_v2(){
 	//prepares the statement
 	snprintf(sql, sizeof(sql),
                 "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT IN ('sessions', 'sqlite_sequence') AND name IN ('%s');",
-                saveArgs.argv[1]
+                str
     );
 	
 	//resets the boolean so that the value is reliable
@@ -593,14 +593,13 @@ int openTopic_v2(){
 	//prints if the thing is a valid entry
 	if(external_boolean){
 		//copies operation to topic
-		strcpy(topic, saveArgs.argv[1]);
-		printf("%s has been successfully openned\n\n", saveArgs.argv[1]);
+		strcpy(topic, str);
+		printf("%s has been successfully openned\n\n", str);
 	}
 	else{
-		printf("%s is not a valid entry\n\n", saveArgs.argv[1]);
+		printf("%s is not a valid entry\n\n", str);
 		return 1;
 	}
-
 	return 0;
 }
 
@@ -659,6 +658,60 @@ int makeEntry(){
                 return 1;
         }
 	*/
+
+	rc = sqlite3_step(stmt);
+
+	if(rc != SQLITE_DONE){
+		printf("There has been an error");
+	}
+	return rc;
+}
+//takes in 4 argv. Argv[0] = "makeEntry" (not passed), Argv[1] = "Question", Argv[2] = "Answer", Argv[3] = "Solution", Argv[4] = "topic"
+//also takes in argc
+int makeEntry_v2(int argc, char* question, char* answer, char* solution, char* tpc){
+	//checks that there is a valid topic and valid argc, argv
+	if(argc > 5){
+		printf("\nToo many arguments\n\n");
+		return 1;
+	}
+	else if(argc < 3){
+		printf("\nToo few arguments\n\n");
+		return 1;
+	}
+	if(argc == 5){
+		int succ = openTopic_v2(2, tpc);
+		if(succ == 1){
+			//failure
+			return 1;
+		}
+		//otherwise there has been success and a topic is open
+	}
+	else if(topic[0] == '\0'){
+		printf("\nUse 'open' to open a topic or 'makenew' to make a new topic.\n\n");
+		return 1;
+	}
+	//if the topic exists, then the rest of the code will execute
+	char sql[5000];
+	char *err_msg = NULL;
+
+	snprintf(sql, sizeof(sql), 
+		"INSERT INTO %s (question, answer, solution, nextStudy) VALUES (?, ?, ?, julianday('now'))",
+		topic
+	);
+
+	//begins the sqlite
+	sqlite3_stmt *stmt;
+	int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+
+	if( rc != SQLITE_OK) {
+        	printf("Failed to prepare statement: %s\n", sqlite3_errmsg(db));
+        	return rc;
+    }
+
+	//binds the text
+	sqlite3_bind_text(stmt, 1, question, -1, SQLITE_TRANSIENT);
+	sqlite3_bind_text(stmt, 2, answer, -1, SQLITE_TRANSIENT);
+	sqlite3_bind_text(stmt, 3, solution, -1, SQLITE_TRANSIENT);
 
 	rc = sqlite3_step(stmt);
 
@@ -935,10 +988,24 @@ void parse(char *str){
 			//there are more than 1 argv
 			switch(i){
 				case 6:
-					//makes an entry
+					if(saveArgs.argc == 3){
+						makeEntry_v2(saveArgs.argc, saveArgs.argv[1], saveArgs.argv[2], NULL, NULL);
+					}
+					else if(saveArgs.argc == 4){
+						makeEntry_v2(saveArgs.argc, saveArgs.argv[1], saveArgs.argv[2], saveArgs.argv[3], NULL);
+					}
+					else if(saveArgs.argc == 5){
+						makeEntry_v2(saveArgs.argc, saveArgs.argv[1], saveArgs.argv[2], saveArgs.argv[3], saveArgs.argv[4]);
+					}
+					else{
+						printf("\nIncorrect number of arguments. entry is passed with question, answer; question, answer, solution; or question, answer, solution, topic\n\n");
+					}
 					break;
 				case 8:
-					openTopic_v2();
+					openTopic_v2(saveArgs.argc, saveArgs.argv[1]);
+					break;
+				default:
+					printf("\nThere is no matching input.\n\n");
 					break;
 			}
 			//resets the saveArgs parameters
