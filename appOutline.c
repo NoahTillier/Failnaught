@@ -24,11 +24,12 @@ char list[10] = "list";
 char entry[10] = "entry";
 char daily[10] = "daily";
 char open[10] = "open";
+char lookup[10] = "lookup";
 
 //number of inputs
-int numInputs = 9;
+int numInputs = 10;
 //input array
-char *inputs[9] = {help, close, start, end, makeNew, list, entry, daily, open};
+char *inputs[10] = {help, close, start, end, makeNew, list, entry, daily, open, lookup};
 
 //used for copying arguments out of callbacks
 typedef struct {
@@ -62,7 +63,8 @@ void appHelp(){
 		"'list' : lists all your current studysets\n"
 		"'entry' : creates a new entry in a studyset\n"
 		"'daily' : begins review of daily sets \n"
-		"'open' : opens a study set for structured study or card entry \n\n");
+		"'open' : opens a study set for structured study or card entry \n"
+		"'lookup [topic] [lowerBound] [upperBound]' : prints the entries with IDs between lowerBound and upperBound\n\n");
 }
 
 //close input
@@ -233,6 +235,23 @@ int getArgs(char *str){
 	}	
 	//returns 0
 	return 0;
+}
+
+//takes a string and casts it to an int;
+int toInt(char *str){
+	int ret = 0;
+	for(int i = 0; *(str+i) != '\0'; i++){
+		if(!isdigit(*(str+i))){
+			printf("Input contained non-number characters. Aborting. ");
+			return -1;
+		}
+		else{
+			ret = ret * 10;
+			ret = ret + *(str+i) - '0';
+		}
+	}
+
+	return ret;
 }
 
 int validate_identifier(const char *s) {
@@ -844,7 +863,7 @@ int study(){
 
 	//updates all values (nextStudy, n, ef, interval)
 	snprintf(sql, sizeof(sql), 
-		"UPDATE %s SET nextStudy = nextStudy + %d, interval = %d, n = %d, ef = %f WHERE id = %d;",
+		"UPDATE %s SET nextStudy = julianday('now') + %d, interval = %d, n = %d, ef = %f WHERE id = %d;",
 		topic, interval, interval, n, ef, id
 	);
 
@@ -933,6 +952,36 @@ int dailyStudy(){
 	return 0;
 }
 
+int entry_lookup(int argc, char *tpc, int lowerLimit, int upperLimit){
+	char *err_msg = NULL;
+	char sql[200];
+
+	if(argc != 4){
+		return 1;
+	}
+
+	if(openTopic_v2(2, tpc) == 1){
+		return 1;
+	}
+	
+	snprintf(sql, sizeof(sql),
+        "SELECT * FROM %s WHERE id >= %d AND id <= %d;",
+        tpc, lowerLimit, upperLimit
+    );
+
+	char *p = sql;
+	printf("%s", p);
+
+	int rc = sqlite3_exec(db, sql, callback, NULL, &err_msg);
+
+    if (rc != SQLITE_OK) {
+	fprintf(stderr, "SQL error: %s\n", err_msg);
+            sqlite3_free(err_msg);
+			return 1;
+    }
+
+	return 0;
+}
 //The parse method compares the input to a list of possible inputs,
 //calling the corresponding function.
 //If the input is invalid, it prints 'invalid input'
@@ -1004,6 +1053,15 @@ void parse(char *str){
 				case 8:
 					openTopic_v2(saveArgs.argc, saveArgs.argv[1]);
 					break;
+				case 9:
+					if(toInt(saveArgs.argv[2]) == -1 || toInt(saveArgs.argv[3]) == -1){
+						printf("Invalid integer inputs. Please try again.");
+					}
+					else{
+						printf("%d\n", toInt(saveArgs.argv[2]));
+						printf("%d\n", toInt(saveArgs.argv[3]));
+						entry_lookup(saveArgs.argc, saveArgs.argv[1], toInt(saveArgs.argv[2]), toInt(saveArgs.argv[3]));
+					}
 				default:
 					printf("\nThere is no matching input.\n\n");
 					break;
