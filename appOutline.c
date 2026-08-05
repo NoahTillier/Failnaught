@@ -1023,6 +1023,12 @@ int average_time(int argc, int numDays){
 	//executes the statement until there are no statements left to execute
 	rc = sqlite3_step(stmt);
 	while(rc == SQLITE_ROW){
+		//gets the end-time (greater than start time), then adds it.
+		int tm = sqlite3_column_double(stmt, 1);
+		hrs = hrs + tm;
+		//gets the start-time (less than start time), then subtracts it.
+		tm = sqlite3_column_double(stmt, 0);
+		hrs = hrs - tm;
 		rc = sqlite3_step(stmt);
 	}
 	
@@ -1030,6 +1036,12 @@ int average_time(int argc, int numDays){
 		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
 		return rc;
 	}
+
+	hrs = hrs * 24.0;
+	double average = hrs / (float)numDays; 
+
+	printf("\nYou have spent an average of %f hours a day studying over the last %d days\n\n", average, numDays);
+	return 0;
 }
 //The parse method compares the input to a list of possible inputs,
 //calling the corresponding function.
