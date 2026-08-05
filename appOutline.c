@@ -965,20 +965,35 @@ int entry_lookup(int argc, char *tpc, int lowerLimit, int upperLimit){
 	}
 	
 	snprintf(sql, sizeof(sql),
-        "SELECT * FROM %s WHERE id >= %d AND id <= %d;",
+        "SELECT id, question, answer, solution FROM %s WHERE id >= %d AND id <= %d;",
         tpc, lowerLimit, upperLimit
     );
 
-	char *p = sql;
-	printf("%s", p);
+	//prepares the statement
+	sqlite3_stmt *stmt;
+	int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+	if(rc != SQLITE_OK){
+		printf("Failed to prepare statement: %s\n", sqlite3_errmsg(db));
+        return rc;
+	}
 
-	int rc = sqlite3_exec(db, sql, callback, NULL, &err_msg);
 
-    if (rc != SQLITE_OK) {
-	fprintf(stderr, "SQL error: %s\n", err_msg);
-            sqlite3_free(err_msg);
-			return 1;
-    }
+	//executes the statement until there are no statements left to execute
+	rc = sqlite3_step(stmt);
+	while(rc == SQLITE_ROW){
+		printf("\n");
+		int id = sqlite3_column_int(stmt, 0);
+		const char *question = sqlite3_column_text(stmt, 1);
+		const char *answer = sqlite3_column_text(stmt, 2);
+		const char *solution = sqlite3_column_text(stmt, 3);
+		printf("%d | %s | %s | %s\n", id, question, answer, solution);
+		rc = sqlite3_step(stmt);
+	}
+	
+	if(rc != SQLITE_DONE){
+		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		return rc;
+	}
 
 	return 0;
 }
@@ -1054,13 +1069,13 @@ void parse(char *str){
 					openTopic_v2(saveArgs.argc, saveArgs.argv[1]);
 					break;
 				case 9:
-					if(toInt(saveArgs.argv[2]) == -1 || toInt(saveArgs.argv[3]) == -1){
+					int lowerBound = toInt(saveArgs.argv[2]);
+					int upperBound = toInt(saveArgs.argv[3]);
+					if(lowerBound == -1 || upperBound == -1 || lowerBound > upperBound){
 						printf("Invalid integer inputs. Please try again.");
 					}
 					else{
-						printf("%d\n", toInt(saveArgs.argv[2]));
-						printf("%d\n", toInt(saveArgs.argv[3]));
-						entry_lookup(saveArgs.argc, saveArgs.argv[1], toInt(saveArgs.argv[2]), toInt(saveArgs.argv[3]));
+						entry_lookup(saveArgs.argc, saveArgs.argv[1], lowerBound, upperBound);
 					}
 				default:
 					printf("\nThere is no matching input.\n\n");
