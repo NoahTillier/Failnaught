@@ -25,11 +25,12 @@ char entry[10] = "entry";
 char daily[10] = "daily";
 char open[10] = "open";
 char lookup[10] = "lookup";
+char average[10] = "average";
 
 //number of inputs
-int numInputs = 10;
+int numInputs = 11;
 //input array
-char *inputs[10] = {help, close, start, end, makeNew, list, entry, daily, open, lookup};
+char *inputs[11] = {help, close, start, end, makeNew, list, entry, daily, open, lookup, average};
 
 //used for copying arguments out of callbacks
 typedef struct {
@@ -64,7 +65,8 @@ void appHelp(){
 		"'entry' : creates a new entry in a studyset\n"
 		"'daily' : begins review of daily sets \n"
 		"'open' : opens a study set for structured study or card entry \n"
-		"'lookup [topic] [lowerBound] [upperBound]' : prints the entries with IDs between lowerBound and upperBound\n\n");
+		"'lookup [topic] [lowerBound] [upperBound]' : prints the entries with IDs between lowerBound and upperBound \n"
+		"'average [numDays]' : prints the average number of hours spent a day studying during the given time period \n\n");
 }
 
 //close input
@@ -1005,8 +1007,17 @@ int entry_lookup(int argc, char *tpc, int lowerLimit, int upperLimit){
 int average_time(int argc, int numDays){
 	char sql[150];
 
+	if(argc != 2){
+		printf("Too many arguments.\n");
+		return 1;
+	}
+	if(numDays == 0){
+		printf("Div by 0 error.\n");
+		return 1;
+	}
+
 	snprintf(sql, sizeof(sql),
-        "SELECT start, end FROM sessions WHERE start > (julianday('now') - %d) ORDER BY start DESC;",
+        "SELECT start, endtime FROM sessions WHERE date(start) > date((julianday('now') - %d)) ORDER BY start DESC;",
         numDays
     );
 
@@ -1019,12 +1030,12 @@ int average_time(int argc, int numDays){
 	}
 
 	//stores the number of hours studied in the day.
-	float hrs = 0.0;
+	double hrs = 0.0;
 	//executes the statement until there are no statements left to execute
 	rc = sqlite3_step(stmt);
 	while(rc == SQLITE_ROW){
 		//gets the end-time (greater than start time), then adds it.
-		int tm = sqlite3_column_double(stmt, 1);
+		double tm = sqlite3_column_double(stmt, 1);
 		hrs = hrs + tm;
 		//gets the start-time (less than start time), then subtracts it.
 		tm = sqlite3_column_double(stmt, 0);
@@ -1038,7 +1049,7 @@ int average_time(int argc, int numDays){
 	}
 
 	hrs = hrs * 24.0;
-	double average = hrs / (float)numDays; 
+	double average = hrs / ((double)numDays); 
 
 	printf("\nYou have spent an average of %f hours a day studying over the last %d days\n\n", average, numDays);
 	return 0;
@@ -1148,6 +1159,15 @@ void parse(char *str){
 							else{
 								entry_lookup(saveArgs.argc, saveArgs.argv[1], lowerBound, upperBound);
 							}
+					}
+					break;
+				case 10:
+					int numDays = toInt(saveArgs.argv[1]);
+					if(numDays == -1){
+						printf("Invalid integer input. Please try again.\n");
+					}
+					else{
+						average_time(saveArgs.argc, numDays);
 					}
 					break;
 				default:
