@@ -954,19 +954,22 @@ int dailyStudy(){
 
 int entry_lookup(int argc, char *tpc, int lowerLimit, int upperLimit){
 	char *err_msg = NULL;
-	char sql[200];
-
-	if(argc != 4){
+	char sql[350];
+	if(argc < 4 && topic[0] == '\0'){
+		printf("Please open a topic to use the lookup feature\n\n");
 		return 1;
 	}
-
-	if(openTopic_v2(2, tpc) == 1){
+	if(argc > 4){
+		printf("Too many arguments");
+		return 1;
+	}
+	if(argc == 4 && openTopic_v2(2, tpc) == 1){
 		return 1;
 	}
 	
 	snprintf(sql, sizeof(sql),
         "SELECT id, question, answer, solution FROM %s WHERE id >= %d AND id <= %d;",
-        tpc, lowerLimit, upperLimit
+        topic, lowerLimit, upperLimit
     );
 
 	//prepares the statement
@@ -1069,14 +1072,41 @@ void parse(char *str){
 					openTopic_v2(saveArgs.argc, saveArgs.argv[1]);
 					break;
 				case 9:
-					int lowerBound = toInt(saveArgs.argv[2]);
-					int upperBound = toInt(saveArgs.argv[3]);
-					if(lowerBound == -1 || upperBound == -1 || lowerBound > upperBound){
-						printf("Invalid integer inputs. Please try again.");
+					int upperBound;
+					int lowerBound;
+					switch(saveArgs.argc){
+						case 2: 
+							//passed lookup [num], returns all values less than that num
+							upperBound = toInt(saveArgs.argv[1]);
+							if(upperBound == -1){
+								printf("Invalid integer input. Please try again.\n");
+							}
+							else{
+								entry_lookup(saveArgs.argc, NULL, 0, upperBound);
+							}
+							break;
+						case 3:
+							//passed lookup [lowernum] [uppernum], returns all values between those nums, inclusive
+							lowerBound = toInt(saveArgs.argv[1]);
+							upperBound = toInt(saveArgs.argv[2]);
+							if(lowerBound == -1 || upperBound == -1 || lowerBound > upperBound){
+								printf("Invalid integer inputs. Please try again.\n");
+							}
+							else{
+								entry_lookup(saveArgs.argc, NULL, lowerBound, upperBound);
+							}
+							break;
+						case 4:
+							lowerBound = toInt(saveArgs.argv[2]);
+							upperBound = toInt(saveArgs.argv[3]);
+							if(lowerBound == -1 || upperBound == -1 || lowerBound > upperBound){
+								printf("Invalid integer inputs. Please try again.\n");
+							}
+							else{
+								entry_lookup(saveArgs.argc, saveArgs.argv[1], lowerBound, upperBound);
+							}
 					}
-					else{
-						entry_lookup(saveArgs.argc, saveArgs.argv[1], lowerBound, upperBound);
-					}
+					break;
 				default:
 					printf("\nThere is no matching input.\n\n");
 					break;
