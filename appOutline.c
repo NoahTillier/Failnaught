@@ -340,8 +340,8 @@ int makenew(){
 int startClock(){
 	//start function
 	const char *insert = 
-	"INSERT INTO sessions (startenergy) "
-	"VALUES (?);";
+	"INSERT INTO sessions (startenergy, start) "
+	"VALUES (?, julianday('now'));";
 
 	int startEnergy = -1;
 	
@@ -387,7 +387,7 @@ int endClock(){
 	//end function
 	const char *endfun = 
 		"UPDATE sessions SET "
-			"end = CURRENT_TIMESTAMP, "
+			"endtime = julianday('now'), "
 			"endenergy = ?, "
 			"focusdepth = ?, "
 			"status = 1 "	
@@ -1000,6 +1000,37 @@ int entry_lookup(int argc, char *tpc, int lowerLimit, int upperLimit){
 
 	return 0;
 }
+
+//averages time spent studying over an entered period of time
+int average_time(int argc, int numDays){
+	char sql[150];
+
+	snprintf(sql, sizeof(sql),
+        "SELECT start, end FROM sessions WHERE start > (julianday('now') - %d) ORDER BY start DESC;",
+        numDays
+    );
+
+	//prepares the statement
+	sqlite3_stmt *stmt;
+	int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+	if(rc != SQLITE_OK){
+		printf("Failed to prepare statement: %s\n", sqlite3_errmsg(db));
+        return rc;
+	}
+
+	//stores the number of hours studied in the day.
+	float hrs = 0.0;
+	//executes the statement until there are no statements left to execute
+	rc = sqlite3_step(stmt);
+	while(rc == SQLITE_ROW){
+		rc = sqlite3_step(stmt);
+	}
+	
+	if(rc != SQLITE_DONE){
+		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		return rc;
+	}
+}
 //The parse method compares the input to a list of possible inputs,
 //calling the corresponding function.
 //If the input is invalid, it prints 'invalid input'
@@ -1136,11 +1167,10 @@ int main(){
 	const char *sql =
 		"CREATE TABLE IF NOT EXISTS sessions ("
 		"id INTEGER PRIMARY KEY AUTOINCREMENT,"
-	        "start DATETIME DEFAULT CURRENT_TIMESTAMP,"
-		"end DATETIME,"
+	    "start REAL,"
+		"endtime REAL,"
 		"startenergy INTEGER,"
 		"endenergy INTEGER,"
-		"difficulty INTEGER,"
 		"focusdepth INTEGER,"
 		"status INTEGER DEFAULT 0"
 		");";
@@ -1149,9 +1179,10 @@ int main(){
 	rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
 
 	if (rc != SQLITE_OK) {
-		sqlite3_free(err_msg);
-		sqlite3_close(db);
-		return 1;
+		fprintf(stderr, "SQL error: %s\n", err_msg);
+    	sqlite3_free(err_msg);
+    	sqlite3_close(db);
+    	return 1;
 	}
 
 	printf("Enter 'help' for a list of available commands.\n\n");
