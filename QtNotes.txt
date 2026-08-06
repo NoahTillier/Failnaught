@@ -1,0 +1,19 @@
+QT C++ GUI Tutorial for Beginners 1
+	QT is normally written in C++
+QT is open source, so the project will be open source as well.
+Documentation:
+- http://www.qt-project.org
+- http://qt.digla.com
+
+Qt Creator = IDE.
+Qt Designer = GUI layout and forms builder
+
+QT SDK. Made up of a lot of modules.
+
+QtCore is a library with object handling, etc.
+
+QtGui has the styles.
+
+
+"" 2
+To install Qt.
