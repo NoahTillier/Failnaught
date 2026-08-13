@@ -1023,7 +1023,7 @@ int average_time(int argc, int numDays){
 	}
 
 	snprintf(sql, sizeof(sql),
-        "SELECT start, endtime FROM sessions WHERE date(start) > date((julianday('now') - %d)) ORDER BY start DESC;",
+        "SELECT start, endtime, status FROM sessions WHERE date(start) > date((julianday('now') - %d)) ORDER BY start DESC;",
         numDays
     );
 
@@ -1040,12 +1040,16 @@ int average_time(int argc, int numDays){
 	//executes the statement until there are no statements left to execute
 	rc = sqlite3_step(stmt);
 	while(rc == SQLITE_ROW){
-		//gets the end-time (greater than start time), then adds it.
-		double tm = sqlite3_column_double(stmt, 1);
-		hrs = hrs + tm;
-		//gets the start-time (less than start time), then subtracts it.
-		tm = sqlite3_column_double(stmt, 0);
-		hrs = hrs - tm;
+		//gets the status (only wants to count the status=1 sessions with a valid stard/end)
+		int stat = sqlite3_column_int(stmt, 2);
+		if(stat){
+			//gets the end-time (greater than start time), then adds it.
+			double tm = sqlite3_column_double(stmt, 1);
+			hrs = hrs + tm;
+			//gets the start-time (less than start time), then subtracts it.
+			tm = sqlite3_column_double(stmt, 0);
+			hrs = hrs - tm;
+		}
 		rc = sqlite3_step(stmt);
 	}
 	
