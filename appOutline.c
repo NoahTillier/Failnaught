@@ -41,6 +41,12 @@ typedef struct {
 //global struct
 saveArguments saveArgs = {NULL, 0};
 
+//testing for React front-end
+int process_input(const char *s){
+	int i = *s;
+	return i;	
+}
+
 //frees all data from the struct
 void reset_saveArgs(){
 	//frees the memory
@@ -1054,6 +1060,74 @@ int average_time(int argc, int numDays){
 	printf("\nYou have spent an average of %f hours a day studying over the last %d days\n\n", average, numDays);
 	return 0;
 }
+
+//this function gets the ID of the most recent entry
+int getMostRecentID(){
+	char *sql = "SELECT id FROM sessions ORDER BY id DESC LIMIT 1;";
+	sqlite3_stmt *stmt;
+
+	//prepare
+	int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+
+	if( rc != SQLITE_OK) {
+		printf("Failed to prepare statement: %s\n", sqlite3_errmsg(db));
+    	return rc;
+    }
+
+	//execute
+	rc = sqlite3_step(stmt);
+
+	if( rc != SQLITE_ROW ){
+		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
+    	return rc;
+	}
+	//get column data
+	int id = sqlite3_column_int(stmt, 0);
+
+	//finish
+	rc = sqlite3_step(stmt);
+	if(rc != SQLITE_DONE){
+		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		return rc;
+	}
+
+	return id;
+}
+
+//this function creates a new entry with start times only
+int createSession(char *startTime){
+	char sql[150];
+	char *err_msg = NULL;
+	snprintf(sql, sizeof(sql), "INSERT INTO sessions (start) VALUES (julianday(%s));", startTime);
+	
+	int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
+
+	if(rc != SQLITE_DONE){
+		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		return rc;
+	}
+
+	return 0;
+}
+//this method takes at least a start-time and end-time
+//with 4 arguments it takes the startenergy and endenergy
+//with 5 arguments it takes the focus depth
+int enterSession(int argc, char startTime, char endTime, int startenergy, int endenergy, int focusdepth){
+	char *sql = "INSERT INTO sessions (start, endtime, startenergy, endenergy, focusdepth, status) "
+		"VALUES (?, ?, ?, ?, ?, 1);";
+	if(argc < 3){
+		printf("Too few arguments");
+		return 1;
+	}
+	else if(argc > 6){
+		printf("Too many arguments");
+	}
+
+	//prepares the statement
+	sqlite3_stmt *stmt;
+	int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+}
+
 //The parse method compares the input to a list of possible inputs,
 //calling the corresponding function.
 //If the input is invalid, it prints 'invalid input'
