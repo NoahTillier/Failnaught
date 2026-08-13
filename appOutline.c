@@ -1109,64 +1109,92 @@ int is_valid_datetime(char *str){
 	for(int i = 0; *(str+i) != '\0'; i++){
 		if(*(str+i) == '-' || *(str+i) == ' ' || *(str+i) == ':'){
 			checkstring[checkInd] = '\0';
-			int val = toInt(checkstring);
-			if(val == -1){
-				printf("Error: Invalid date input. Aborting.\n");
-				return 1;
-			}
-			switch(strPlace){
-				case 1:
-					if(val < 2026 || val >= 9999){
-						printf("Error: Invalid year. Aborting.\n");	
-						return 1;
-					}
-					break;
-				case 2:
-					if(val < 1 || val > 12){
-						printf("Error: Invalid month. Aborting.\n");
-						return 1;
-					}
-					month = val;
-					break;
-				case 3:
-					if(month == 2){
-						if(val < 1 || val > 28){
-							printf("Error: Invalid day. Aborting.\n");
+				int val = toInt(checkstring);
+				if(val == -1){
+					printf("Error: Invalid date input. Aborting.\n");
+					return 1;
+				}
+				switch(strPlace){
+					case 1:
+						if(*(str+i) != '-'){
+							printf("Error: date entries must be separated by a '-'.\n");
 							return 1;
 						}
-					}
-					else if(month == 4 || month == 6 || month == 9 || month == 11){
-						if(val < 1 || val > 30){
-							printf("Error: Invalid day. Aborting.\n");
+						if(val < 2026 || val >= 9999){
+							printf("Error: Invalid year. Aborting.\n");	
 							return 1;
 						}
-					}
-					else{
-						if(val < 1 || val > 31){
-							printf("Error: Invalid day. Aborting.\n");
+						break;
+					case 2:
+						if(*(str+i) != '-'){
+							printf("Error: date entries must be separated by a '-'.\n");
 							return 1;
 						}
-					}
-				case 4:
-					if(val >= 24){
-						printf("Error: Invalid hour. Aborting.\n");
-						return 1;
-					}
-					break;
-				case 5:
-					if(val >= 60){
-						printf("Error: Invalid minute. Aborting.\n");
-						return 1;
-					}
-					break;
-			}
-			strPlace++;
-			checkInd = 0;
+						if(val < 1 || val > 12){
+							printf("Error: Invalid month. Aborting.\n");
+							return 1;
+						}
+						month = val;
+						break;
+					case 3:
+						if(*(str+i) != ' '){
+							printf("Error: date and time entries must be separated by a ' '.\n");
+							return 1;
+						}
+						if(month == 2){
+							if(val < 1 || val > 28){
+								printf("Error: Invalid day. Aborting.\n");
+								return 1;
+							}
+						}
+						else if(month == 4 || month == 6 || month == 9 || month == 11){
+							if(val < 1 || val > 30){
+								printf("Error: Invalid day. Aborting.\n");
+								return 1;
+							}
+						}
+						else{
+							if(val < 1 || val > 31){
+								printf("Error: Invalid day. Aborting.\n");
+								return 1;
+							}
+						}
+						break;
+					case 4:
+						if(*(str+i) != ':'){
+							printf("Error: time entries must be separated by a ':'.\n");
+							return 1;
+						}
+						if(val >= 24){
+							printf("Error: Invalid hour. Aborting.\n");
+							return 1;
+						}
+						break;
+					case 5:
+						if(*(str+i) != ':'){
+							printf("Error: time entries must be separated by a ':'.\n");
+							return 1;
+						}
+						if(val >= 60){
+							printf("Error: Invalid minute. Aborting.\n");
+							return 1;
+						}
+						break;
+					default:
+						break;
+				}
+				strPlace++;
+				checkInd = 0;
 		}
-		else{ //toInt validates that the characters are correct
+		else if(*(str+i) != '"'){ 
+			//note that toInt() validates that the characters are correct
 			checkstring[checkInd] = *(str+i);
 			checkInd++;
 		}
+	}
+	if(strPlace != 6){
+		printf("Error: incorrect number of arguments.\n");
+		return 1;
 	}
 	checkstring[checkInd] = '\0';
 	int val = toInt(checkstring);
@@ -1386,6 +1414,23 @@ int main(){
 	}
 
 	printf("Enter 'help' for a list of available commands.\n\n");
+	
+	/*tests datetime*/
+	printf("Enter your date-time:\n\n");
+	char *str = fgets(operation, 150, stdin);
+	//loads arguments into saveArgs
+	int ret = getArgs_v2(str);
+	//statement checks that the arguments have been processed correctly
+	if(ret != 0 || saveArgs.argc == 0){
+		printf("\nPlease enter a valid string\n\n");
+	}
+	if(saveArgs.argc != 1){
+		printf("\nPlease enter only one date-time argument\n\n");
+	}
+	ret = is_valid_datetime(saveArgs.argv[0]);
+	printf("is_valid_datetime returned %d\n\n", ret);
+	exit(0);
+	
 	//note that this is an infinite loop, which is intentional.
 	int cont = 1;
 	while(cont){
