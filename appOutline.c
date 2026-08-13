@@ -1098,10 +1098,100 @@ int getMostRecentID(){
 	return id;
 }
 
+//checks that the passed string is a datetime that can be processed by SQLITE3.
+//dates are formatted like:
+//2026-08-05 16:01:24
+int is_valid_datetime(char *str){
+	char checkstring[50];
+	int checkInd = 0;
+	int strPlace = 1;
+	int month;
+	for(int i = 0; *(str+i) != '\0'; i++){
+		if(*(str+i) == '-' || *(str+i) == ' ' || *(str+i) == ':'){
+			checkstring[checkInd] = '\0';
+			int val = toInt(checkstring);
+			if(val == -1){
+				printf("Error: Invalid date input. Aborting.\n");
+				return 1;
+			}
+			switch(strPlace){
+				case 1:
+					if(val < 2026 || val >= 9999){
+						printf("Error: Invalid year. Aborting.\n");	
+						return 1;
+					}
+					break;
+				case 2:
+					if(val < 1 || val > 12){
+						printf("Error: Invalid month. Aborting.\n");
+						return 1;
+					}
+					month = val;
+					break;
+				case 3:
+					if(month == 2){
+						if(val < 1 || val > 28){
+							printf("Error: Invalid day. Aborting.\n");
+							return 1;
+						}
+					}
+					else if(month == 4 || month == 6 || month == 9 || month == 11){
+						if(val < 1 || val > 30){
+							printf("Error: Invalid day. Aborting.\n");
+							return 1;
+						}
+					}
+					else{
+						if(val < 1 || val > 31){
+							printf("Error: Invalid day. Aborting.\n");
+							return 1;
+						}
+					}
+				case 4:
+					if(val >= 24){
+						printf("Error: Invalid hour. Aborting.\n");
+						return 1;
+					}
+					break;
+				case 5:
+					if(val >= 60){
+						printf("Error: Invalid minute. Aborting.\n");
+						return 1;
+					}
+					break;
+			}
+			strPlace++;
+			checkInd = 0;
+		}
+		else{ //toInt validates that the characters are correct
+			checkstring[checkInd] = *(str+i);
+			checkInd++;
+		}
+	}
+	checkstring[checkInd] = '\0';
+	int val = toInt(checkstring);
+	if(val == -1){
+		printf("Error: Invalid date input. Aborting.\n");
+		return 1;
+	}
+	if(val >= 60){
+		printf("Error: Invalid second. Aborting.\n");
+		return 1;
+	}
+	return 0;
+}
+
 //this function creates a new entry with start times only
 int createSession(char *startTime){
 	char sql[150];
 	char *err_msg = NULL;
+	//dates are formatted like:
+	//2026-08-05 16:01:24
+	int is_valid_startTime = is_valid_datetime(startTime);
+	if(is_valid_startTime == 1){
+		printf("Error: An invalid date was entered. Please correct your date input.\n");
+		return -1;
+	}
 	snprintf(sql, sizeof(sql), "INSERT INTO sessions (start) VALUES (julianday(%s));", startTime);
 	
 	int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
