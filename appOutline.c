@@ -1306,23 +1306,73 @@ int update_focusdepth(int focusdepth, int id){
 
 	return 0;
 }
+
+int update_status(int id){
+	char *sql = "UPDATE sessions SET status = 1 WHERE id = id;";
+	char *err_msg = NULL;
+		int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
+
+	if(rc != SQLITE_DONE){
+		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		return rc;
+	}
+
+	return 0;
+}
 //this method takes at least a start-time and end-time
 //with 4 arguments it takes the startenergy and endenergy
 //with 5 arguments it takes the focus depth
 int enterSession(int argc, char startTime, char endTime, int startenergy, int endenergy, int focusdepth){
-	char *sql = "INSERT INTO sessions (start, endtime, startenergy, endenergy, focusdepth, status) "
-		"VALUES (?, ?, ?, ?, ?, 1);";
 	if(argc < 3){
 		printf("Too few arguments");
 		return 1;
 	}
 	else if(argc > 6){
 		printf("Too many arguments");
+		return 1;
+	}
+	
+	int id = 0;
+	if(argc >= 3){
+		int res = createSession(&startTime);
+		if(res != 0){
+			printf("\nDue to an error, the session could not be initialized. Please try again.\n\n");
+			return 1;
+		}
+		id = getMostRecentID();
+		res = closeSession(&endTime, id);
+		if(res != 0){
+			printf("\nDue to an error, the session could not be closed. Please edit the session to close it.\n\n");
+			return 1;
+		}
+		res = update_status(id);
+	}
+	if(argc == 4){
+		int res = update_focusdepth(focusdepth, id);
+		if(res != 0){
+			printf("\nDue to an error, the session may not have the correct focus depth. Please edit the session to repair it.\n\n");
+			return 1;
+		}
+	}
+	if(argc == 6){
+		int res = update_startenergy(startenergy, id);
+		if(res != 0){
+			printf("\nDue to an error, the session may not have the correct end energy. Please edit the session to repair it.\n\n");
+			return 1;
+		}
+		res = update_endenergy(endenergy, id);
+		if(res != 0){
+			printf("\nDue to an error, the session may not have the correct end energy. Please edit the session to repair it.\n\n");
+			return 1;
+		}
+		res = update_focusdepth(focusdepth, id);
+		if(res != 0){
+			printf("\nDue to an error, the session may not have the correct focus depth. Please edit the session to repair it.\n\n");
+			return 1;
+		}
 	}
 
-	//prepares the statement
-	sqlite3_stmt *stmt;
-	int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+	return 0;
 }
 
 //The parse method compares the input to a list of possible inputs,
