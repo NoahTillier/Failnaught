@@ -26,11 +26,12 @@ char daily[10] = "daily";
 char open[10] = "open";
 char lookup[10] = "lookup";
 char average[10] = "average";
+char session[10] = "session";
 
 //number of inputs
-int numInputs = 11;
+int numInputs = 12;
 //input array
-char *inputs[11] = {help, close, start, end, makeNew, list, entry, daily, open, lookup, average};
+char *inputs[12] = {help, close, start, end, makeNew, list, entry, daily, open, lookup, average, session};
 
 //used for copying arguments out of callbacks
 typedef struct {
@@ -72,7 +73,8 @@ void appHelp(){
 		"'daily' : begins review of daily sets \n"
 		"'open' : opens a study set for structured study or card entry \n"
 		"'lookup [topic] [lowerBound] [upperBound]' : prints the entries with IDs between lowerBound and upperBound \n"
-		"'average [numDays]' : prints the average number of hours spent a day studying during the given time period \n\n");
+		"'average [numDays]' : prints the average number of hours spent a day studying during the given time period \n"
+		"'session [starttime] [endtime] [startenergy] [endenergy] [focusdepth]' : enters a new session with user-defined values. Note that the start and end times must be in quotes presented 'yyyy-mm-dd hh:mm:ss'\n\n");
 }
 
 //close input
@@ -1222,7 +1224,7 @@ int createSession(char *startTime){
 	
 	int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
 
-	if(rc != SQLITE_DONE){
+	if(rc != SQLITE_OK){
 		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
 		return rc;
 	}
@@ -1238,11 +1240,11 @@ int closeSession(char *endTime, int id){
 		printf("Error: An invalid date was entered. Please correct your date input.\n");
 		return 1;
 	}
-	snprintf(sql, sizeof(sql), "UPDATE sessions SET end = (julianday(%s)) WHERE id = %d;", endTime, id);
+	snprintf(sql, sizeof(sql), "UPDATE sessions SET endtime = (julianday(%s)) WHERE id = %d;", endTime, id);
 	
 	int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
 
-	if(rc != SQLITE_DONE){
+	if(rc != SQLITE_OK){
 		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
 		return rc;
 	}
@@ -1261,7 +1263,7 @@ int update_startenergy(int startenergy, int id){
 	
 	int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
 
-	if(rc != SQLITE_DONE){
+	if(rc != SQLITE_OK){
 		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
 		return rc;
 	}
@@ -1280,7 +1282,7 @@ int update_endenergy(int endenergy, int id){
 	
 	int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
 
-	if(rc != SQLITE_DONE){
+	if(rc != SQLITE_OK){
 		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
 		return rc;
 	}
@@ -1299,7 +1301,7 @@ int update_focusdepth(int focusdepth, int id){
 	
 	int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
 
-	if(rc != SQLITE_DONE){
+	if(rc != SQLITE_OK){
 		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
 		return rc;
 	}
@@ -1312,7 +1314,7 @@ int update_status(int id){
 	char *err_msg = NULL;
 		int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
 
-	if(rc != SQLITE_DONE){
+	if(rc != SQLITE_OK){
 		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
 		return rc;
 	}
@@ -1322,7 +1324,7 @@ int update_status(int id){
 //this method takes at least a start-time and end-time
 //with 4 arguments it takes the startenergy and endenergy
 //with 5 arguments it takes the focus depth
-int enterSession(int argc, char startTime, char endTime, int startenergy, int endenergy, int focusdepth){
+int enterSession(int argc, char * startTime, char * endTime, int startenergy, int endenergy, int focusdepth){
 	if(argc < 3){
 		printf("Too few arguments");
 		return 1;
@@ -1334,13 +1336,13 @@ int enterSession(int argc, char startTime, char endTime, int startenergy, int en
 	
 	int id = 0;
 	if(argc >= 3){
-		int res = createSession(&startTime);
+		int res = createSession(startTime);
 		if(res != 0){
 			printf("\nDue to an error, the session could not be initialized. Please try again.\n\n");
 			return 1;
 		}
 		id = getMostRecentID();
-		res = closeSession(&endTime, id);
+		res = closeSession(endTime, id);
 		if(res != 0){
 			printf("\nDue to an error, the session could not be closed. Please edit the session to close it.\n\n");
 			return 1;
@@ -1491,6 +1493,19 @@ void parse(char *str){
 						average_time(saveArgs.argc, numDays);
 					}
 					break;
+				case 11:
+					switch(saveArgs.argc){
+						case 3:
+							enterSession(saveArgs.argc, saveArgs.argv[1], saveArgs.argv[2], 0, 0, 0);
+							break;
+						case 4:
+							enterSession(saveArgs.argc, saveArgs.argv[1], saveArgs.argv[2], 0, 0, toInt(saveArgs.argv[3]));
+							break;
+						case 6:
+							enterSession(saveArgs.argc, saveArgs.argv[1], saveArgs.argv[2], toInt(saveArgs.argv[3]), toInt(saveArgs.argv[4]), toInt(saveArgs.argv[5]));
+							break;
+						default:
+					}
 				default:
 					printf("\nThere is no matching input.\n\n");
 					break;
