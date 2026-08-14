@@ -1220,7 +1220,7 @@ int is_valid_datetime(char *str){
 		}
 	}
 	if(strPlace != 6){
-		printf("Error: incorrect number of arguments.\n");
+		printf("Error: incorrect number of date arguments.\n");
 		return 1;
 	}
 	checkstring[checkInd] = '\0';
@@ -1338,7 +1338,7 @@ int update_status(int id){
 	char sql[150];
 	snprintf(sql, sizeof(sql), "UPDATE sessions SET status = 1 WHERE id = %d;", id);
 	char *err_msg = NULL;
-		int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
+	int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
 
 	if(rc != SQLITE_OK){
 		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
@@ -1349,8 +1349,17 @@ int update_status(int id){
 }
 
 int delete_session(int id){
+	char sql[150];
+	char *err_msg = NULL;
+	snprintf(sql, sizeof(sql), "DELETE FROM sessions WHERE id = %d;", id);
+	int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
+	if(rc != SQLITE_OK){
+		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		return rc;
+	}
 	return 0;
 }
+
 //this method takes at least a start-time and end-time
 //with 4 arguments it takes the startenergy and endenergy
 //with 5 arguments it takes the focus depth
@@ -1374,7 +1383,11 @@ int enterSession(int argc, char * startTime, char * endTime, int startenergy, in
 		id = getMostRecentID();
 		res = closeSession(endTime, id);
 		if(res != 0){
-			printf("\nDue to an error, the session could not be closed. Please edit the session to close it.\n\n");
+			printf("\nDue to an error, the session could not be closed and has been removed. Please try again.\n\n");
+			int res = delete_session(id);
+			if(res != 0){
+				printf("\nCould not remove the session. Please edit it to close it or remove it and try again.\n\n");
+			}
 			return 1;
 		}
 		res = update_status(id);
