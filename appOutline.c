@@ -1213,14 +1213,32 @@ int is_valid_datetime(char *str){
 int createSession(char *startTime){
 	char sql[150];
 	char *err_msg = NULL;
-	//dates are formatted like:
-	//2026-08-05 16:01:24
 	int is_valid_startTime = is_valid_datetime(startTime);
 	if(is_valid_startTime == 1){
 		printf("Error: An invalid date was entered. Please correct your date input.\n");
-		return -1;
+		return 1;
 	}
 	snprintf(sql, sizeof(sql), "INSERT INTO sessions (start) VALUES (julianday(%s));", startTime);
+	
+	int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
+
+	if(rc != SQLITE_DONE){
+		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		return rc;
+	}
+
+	return 0;
+}
+
+int closeSession(char *endTime, int id){
+	char sql[150];
+	char *err_msg = NULL;
+	int is_valid_endTime = is_valid_datetime(endTime);
+	if(is_valid_endTime == 1){
+		printf("Error: An invalid date was entered. Please correct your date input.\n");
+		return 1;
+	}
+	snprintf(sql, sizeof(sql), "UPDATE sessions SET end = (julianday(%s)) WHERE id = %d;", endTime, id);
 	
 	int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
 
@@ -1414,22 +1432,6 @@ int main(){
 	}
 
 	printf("Enter 'help' for a list of available commands.\n\n");
-	
-	/*tests datetime*/
-	printf("Enter your date-time:\n\n");
-	char *str = fgets(operation, 150, stdin);
-	//loads arguments into saveArgs
-	int ret = getArgs_v2(str);
-	//statement checks that the arguments have been processed correctly
-	if(ret != 0 || saveArgs.argc == 0){
-		printf("\nPlease enter a valid string\n\n");
-	}
-	if(saveArgs.argc != 1){
-		printf("\nPlease enter only one date-time argument\n\n");
-	}
-	ret = is_valid_datetime(saveArgs.argv[0]);
-	printf("is_valid_datetime returned %d\n\n", ret);
-	exit(0);
 	
 	//note that this is an infinite loop, which is intentional.
 	int cont = 1;
