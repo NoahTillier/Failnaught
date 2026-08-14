@@ -27,11 +27,12 @@ char open[10] = "open";
 char lookup[10] = "lookup";
 char average[10] = "average";
 char session[10] = "session";
+char delete[10] = "delete";
 
 //number of inputs
-int numInputs = 12;
+int numInputs = 13;
 //input array
-char *inputs[12] = {help, close, start, end, makeNew, list, entry, daily, open, lookup, average, session};
+char *inputs[13] = {help, close, start, end, makeNew, list, entry, daily, open, lookup, average, session, delete};
 
 //used for copying arguments out of callbacks
 typedef struct {
@@ -74,7 +75,8 @@ void appHelp(){
 		"'open' : opens a study set for structured study or card entry \n"
 		"'lookup [topic] [lowerBound] [upperBound]' : prints the entries with IDs between lowerBound and upperBound \n"
 		"'average [numDays]' : prints the average number of hours spent a day studying during the given time period \n"
-		"'session [starttime] [endtime] [startenergy] [endenergy] [focusdepth]' : enters a new session with user-defined values. Note that the start and end times must be in quotes presented 'yyyy-mm-dd hh:mm:ss'\n\n");
+		"'session [starttime] [endtime] [startenergy] [endenergy] [focusdepth]' : enters a new session with user-defined values. Note that the start and end times must be in quotes presented 'yyyy-mm-dd hh:mm:ss'\n"
+		"'delete [id]' : removes the session corresponding to the entered id, if one exists.");
 }
 
 //close input
@@ -1549,6 +1551,19 @@ void parse(char *str){
 							break;
 						default:
 					}
+					break;
+				case 12:
+					int id;
+					if(saveArgs.argc == 2){
+						id = toInt(saveArgs.argv[1]);
+						if(id < 0){
+							printf("\nError: Invalid ID. Please Try again.\n\n");
+						}
+						else{
+							delete_session(id);
+						}
+					}
+					break;
 				default:
 					printf("\nThere is no matching input.\n\n");
 					break;
