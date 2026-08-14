@@ -353,6 +353,37 @@ int startClock(){
 	"INSERT INTO sessions (startenergy, start) "
 	"VALUES (?, julianday('now'));";
 
+	//checks that there are no active sessions
+	sqlite3_stmt *stmt;
+	//get status function
+	const char *statfun = 
+		"SELECT status " 
+		"FROM sessions "
+		"WHERE status = 0;";
+	
+	//error message string
+	char *err = NULL;
+
+	//The prepare statement compiles statfun into stmt.
+	int rc  = sqlite3_prepare_v2(db, statfun, -1, &stmt, NULL);
+	
+	//checks to make sure that the statement was compiled without errors
+	if(rc != SQLITE_OK){
+		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		return rc;
+	}
+	
+	//the step statement evaluates the first row of results.
+	rc = sqlite3_step(stmt);
+	if(rc == SQLITE_ROW){
+		printf("\nYou have an active study session. Please close the study session to start a new one.\n\n");
+		return rc;
+	}
+	
+	//the finalize statement destroys stmt so it can be reused.
+	sqlite3_finalize(stmt);
+
+
 	int startEnergy = -1;
 	
 	while(startEnergy < 1 || startEnergy > 10){
@@ -367,8 +398,7 @@ int startClock(){
                 }
 	}
 
-	sqlite3_stmt *stmt;
-	int rc = sqlite3_prepare_v2(db, insert, -1, &stmt, NULL);
+	rc = sqlite3_prepare_v2(db, insert, -1, &stmt, NULL);
 
 	if( rc != SQLITE_OK) {
         	printf("Failed to prepare statement: %s\n", sqlite3_errmsg(db));
@@ -402,7 +432,7 @@ int endClock(){
 			"focusdepth = ?, "
 			"status = 1 "	
 		"WHERE "
-			"id = (SELECT MAX(id) FROM sessions);";
+			"status = 0;";
 	//status
 	int status = -1;
 	sqlite3_stmt *stmt;
@@ -410,7 +440,7 @@ int endClock(){
 	const char *statfun = 
 		"SELECT status " 
 		"FROM sessions "
-		"WHERE id = (SELECT MAX(id) FROM sessions);";
+		"WHERE status = 0;";
 	
 	//error message string
 	char *err = NULL;
@@ -430,17 +460,12 @@ int endClock(){
 	if(rc == SQLITE_ROW){
 		status = sqlite3_column_int(stmt, 0);
 	} else {
-		printf("\nYou do not have any study sessions to close.\n\n");
+		printf("\nYou do not have any active study sessions to close.\n\n");
 		return rc;
 	}
 	
 	//the finalize statement destroys stmt so it can be reused.
 	sqlite3_finalize(stmt);
-
-	if(status == 1){
-		printf("\nThere are active no sessions to end.\n\n");
-		return rc;
-	}
 
 	//otherwise, begins the endfun
 	int endenergy = -1;
@@ -1310,7 +1335,8 @@ int update_focusdepth(int focusdepth, int id){
 }
 
 int update_status(int id){
-	char *sql = "UPDATE sessions SET status = 1 WHERE id = id;";
+	char sql[150];
+	snprintf(sql, sizeof(sql), "UPDATE sessions SET status = 1 WHERE id = %d;", id);
 	char *err_msg = NULL;
 		int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
 
@@ -1319,6 +1345,10 @@ int update_status(int id){
 		return rc;
 	}
 
+	return 0;
+}
+
+int delete_session(int id){
 	return 0;
 }
 //this method takes at least a start-time and end-time
