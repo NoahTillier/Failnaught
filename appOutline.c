@@ -1249,6 +1249,63 @@ int closeSession(char *endTime, int id){
 
 	return 0;
 }
+
+int update_startenergy(int startenergy, int id){
+	char sql[150];
+	char *err_msg = NULL;
+	if(startenergy < 1 || startenergy > 10){
+		printf("Error: An invalid start energy was entered. Please correct your input.\n");
+		return 1;
+	}
+	snprintf(sql, sizeof(sql), "UPDATE sessions SET startenergy = %d WHERE id = %d;", startenergy, id);
+	
+	int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
+
+	if(rc != SQLITE_DONE){
+		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		return rc;
+	}
+
+	return 0;
+}
+
+int update_endenergy(int endenergy, int id){
+	char sql[150];
+	char *err_msg = NULL;
+	if(endenergy < 1 || endenergy > 10){
+		printf("Error: An invalid end energy was entered. Please correct your input.\n");
+		return 1;
+	}
+	snprintf(sql, sizeof(sql), "UPDATE sessions SET endenergy = %d WHERE id = %d;", endenergy, id);
+	
+	int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
+
+	if(rc != SQLITE_DONE){
+		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		return rc;
+	}
+
+	return 0;
+}
+
+int update_focusdepth(int focusdepth, int id){
+	char sql[150];
+	char *err_msg = NULL;
+	if(focusdepth < 1 || focusdepth > 5){
+		printf("Error: An invalid end energy was entered. Please correct your input.\n");
+		return 1;
+	}
+	snprintf(sql, sizeof(sql), "UPDATE sessions SET endenergy = %d WHERE id = %d;", focusdepth, id);
+	
+	int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
+
+	if(rc != SQLITE_DONE){
+		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		return rc;
+	}
+
+	return 0;
+}
 //this method takes at least a start-time and end-time
 //with 4 arguments it takes the startenergy and endenergy
 //with 5 arguments it takes the focus depth
