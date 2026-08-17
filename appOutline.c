@@ -20,7 +20,7 @@ char close[10] = "close";
 char start[10] = "start";
 char end[10] = "end";
 char makeNew[10] = "makenew";
-char list[10] = "list";
+char list[10] = "lt";
 char entry[10] = "entry";
 char daily[10] = "daily";
 char open[10] = "open";
@@ -28,11 +28,12 @@ char lookup[10] = "lookup";
 char average[10] = "average";
 char session[10] = "session";
 char delete[10] = "delete";
+char list_sessions[10] = "ls";
 
 //number of inputs
-int numInputs = 13;
+int numInputs = 14;
 //input array
-char *inputs[13] = {help, close, start, end, makeNew, list, entry, daily, open, lookup, average, session, delete};
+char *inputs[14] = {help, close, start, end, makeNew, list, entry, daily, open, lookup, average, session, delete, list_sessions};
 
 //used for copying arguments out of callbacks
 typedef struct {
@@ -69,14 +70,15 @@ void appHelp(){
 		"'start' : starts a study session\n"
 		"'end' : ends a started study session\n"
 		"'makenew' : creates a new studyset\n"
-		"'list' : lists all your current studysets\n"
+		"'lt' : lists all your current studysets\n"
 		"'entry' : creates a new entry in a studyset\n"
 		"'daily' : begins review of daily sets \n"
 		"'open' : opens a study set for structured study or card entry \n"
 		"'lookup [topic] [lowerBound] [upperBound]' : prints the entries with IDs between lowerBound and upperBound \n"
 		"'average [numDays]' : prints the average number of hours spent a day studying during the given time period \n"
 		"'session [starttime] [endtime] [startenergy] [endenergy] [focusdepth]' : enters a new session with user-defined values. Note that the start and end times must be in quotes presented 'yyyy-mm-dd hh:mm:ss'\n"
-		"'delete [id]' : removes the session corresponding to the entered id, if one exists.");
+		"'delete [id]' : removes the session corresponding to the entered id, if one exists.\n"
+		"'ls [numDays]' : lists all sessions within the last numDays.\n\n");
 }
 
 //close input
@@ -1422,6 +1424,52 @@ int enterSession(int argc, char * startTime, char * endTime, int startenergy, in
 	return 0;
 }
 
+int listSessions(int argc, int numDays){
+	char sql[150];
+	snprintf(sql, sizeof(sql), "SELECT * FROM sessions WHERE date(start) > date(julianday('now') - %d);", numDays);
+	//averages time spent studying over an entered period of time
+
+	//prepares the statement
+	sqlite3_stmt *stmt;
+	int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+	if(rc != SQLITE_OK){
+		printf("Failed to prepare statement: %s\n", sqlite3_errmsg(db));
+        return rc;
+	}
+
+	//executes the statement until there are no statements left to execute
+	rc = sqlite3_step(stmt);
+	while(rc == SQLITE_ROW){
+		//gets the status (only wants to count the status=1 sessions with a valid stard/end)
+		int stat = sqlite3_column_int(stmt, 6);
+		if(stat){
+			//print out date of session first
+			printf("\n Date: [not yet implemented] |");
+			printf(" Id: %d |", sqlite3_column_int(stmt, 0));
+			//gets the end-time (greater than start time).
+			double tm = sqlite3_column_double(stmt, 2);
+			//subtracts the start-time (less than end time).
+			tm -= sqlite3_column_double(stmt, 1);
+			tm *= 24.0;
+			printf(" Hours: %f |", tm);
+			int se = sqlite3_column_int(stmt, 3);
+			printf(" Start energy: %d |", se);
+			se -= sqlite3_column_int(stmt, 4);
+			printf(" Change: %d |", se);
+			printf(" Intensity: %d", sqlite3_column_int(stmt, 5));
+		}
+		rc = sqlite3_step(stmt);
+	}
+	printf("\n\n");
+	
+	if(rc != SQLITE_DONE){
+		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		return rc;
+	}
+
+	return 0;
+}
+
 //The parse method compares the input to a list of possible inputs,
 //calling the corresponding function.
 //If the input is invalid, it prints 'invalid input'
@@ -1561,6 +1609,18 @@ void parse(char *str){
 						}
 						else{
 							delete_session(id);
+						}
+					}
+					break;
+				case 13:
+					int days;
+					if(saveArgs.argc == 2){
+						days = toInt(saveArgs.argv[1]);
+						if(days < 0){
+							printf("\nError: Invalid numDays, %d. Please try again.\n\n", days);
+						}
+						else{
+							listSessions(saveArgs.argc, days);
 						}
 					}
 					break;
