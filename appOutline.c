@@ -1425,8 +1425,8 @@ int enterSession(int argc, char * startTime, char * endTime, int startenergy, in
 }
 
 int listSessions(int argc, int numDays){
-	char sql[150];
-	snprintf(sql, sizeof(sql), "SELECT * FROM sessions WHERE date(start) > date(julianday('now') - %d);", numDays);
+	char sql[250];
+	snprintf(sql, sizeof(sql), "SELECT id, start, endtime, startenergy, endenergy, focusdepth, status, date(start, 'localtime'), time(start, 'localtime') FROM sessions WHERE date(start) > date(julianday('now') - %d) ORDER BY id DESC;", numDays);
 	//averages time spent studying over an entered period of time
 
 	//prepares the statement
@@ -1444,7 +1444,8 @@ int listSessions(int argc, int numDays){
 		int stat = sqlite3_column_int(stmt, 6);
 		if(stat){
 			//print out date of session first
-			printf("\n Date: [not yet implemented] |");
+			printf("\n Date: %s |", sqlite3_column_text(stmt, 7));
+			printf(" Start: %s |", sqlite3_column_text(stmt, 8));
 			printf(" Id: %d |", sqlite3_column_int(stmt, 0));
 			//gets the end-time (greater than start time).
 			double tm = sqlite3_column_double(stmt, 2);
@@ -1455,6 +1456,7 @@ int listSessions(int argc, int numDays){
 			int se = sqlite3_column_int(stmt, 3);
 			printf(" Start energy: %d |", se);
 			se -= sqlite3_column_int(stmt, 4);
+			se *= -1;
 			printf(" Change: %d |", se);
 			printf(" Intensity: %d", sqlite3_column_int(stmt, 5));
 		}
