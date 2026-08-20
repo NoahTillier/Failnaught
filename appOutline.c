@@ -29,11 +29,12 @@ char average[10] = "average";
 char session[10] = "session";
 char delete[10] = "delete";
 char list_sessions[10] = "ls";
+char elapsed[10] = "el";
 
 //number of inputs
-int numInputs = 14;
+int numInputs = 15;
 //input array
-char *inputs[14] = {help, close, start, end, makeNew, list, entry, daily, open, lookup, average, session, delete, list_sessions};
+char *inputs[15] = {help, close, start, end, makeNew, list, entry, daily, open, lookup, average, session, delete, list_sessions, elapsed};
 
 //used for copying arguments out of callbacks
 typedef struct {
@@ -78,7 +79,8 @@ void appHelp(){
 		"'average [numDays]' : prints the average number of hours spent a day studying during the given time period \n"
 		"'session [starttime] [endtime] [startenergy] [endenergy] [focusdepth]' : enters a new session with user-defined values. Note that the start and end times must be in quotes presented 'yyyy-mm-dd hh:mm:ss'\n"
 		"'delete [id]' : removes the session corresponding to the entered id, if one exists.\n"
-		"'ls [numDays]' : lists all sessions within the last numDays.\n\n");
+		"'ls [numDays]' : lists all sessions within the last numDays.\n"
+		"'el' : displays the elapsed time of your current session in hours:minutes.\n\n");
 }
 
 //close input
@@ -1472,6 +1474,66 @@ int listSessions(int argc, int numDays){
 	return 0;
 }
 
+//gets the amount of time elapsed since starting the session.
+int elapsed_time(){
+	char *sql_one = "SELECT julianday(CURRENT_TIMESTAMP);";
+	char *sql_two = "SELECT start FROM sessions WHERE status = 0;";
+	double starttime = 0;
+	sqlite3_stmt *stmt;
+	//prepares statement
+	int rc = sqlite3_prepare_v2(db, sql_two, -1, &stmt, NULL);
+	if(rc != SQLITE_OK){
+		printf("Failed to prepare statement: %s\n", sqlite3_errmsg(db));
+        return rc;
+	}
+	//executes statement
+	rc = sqlite3_step(stmt);
+	if(rc != SQLITE_ROW){
+		printf("\n\nNo active session.\n");
+		return 0;
+	}
+	else{
+		starttime -= sqlite3_column_double(stmt, 0);
+	}
+	rc = sqlite3_step(stmt);
+	if(rc != SQLITE_DONE){
+		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		return rc;
+	}
+	//prepares statement 1
+	rc = sqlite3_prepare_v2(db, sql_one, -1, &stmt, NULL);
+	if(rc != SQLITE_OK){
+		printf("Failed to prepare statement: %s\n", sqlite3_errmsg(db));
+        return rc;
+	}
+	//executes statement
+	rc = sqlite3_step(stmt);
+	if(rc != SQLITE_ROW){
+		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		return rc;
+	}
+	else{
+		starttime += sqlite3_column_double(stmt, 0);
+	}
+	rc = sqlite3_step(stmt);
+	if(rc != SQLITE_DONE){
+		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		return rc;
+	}
+	//truncates values
+	starttime *= 24.0;
+	int hours = starttime;
+	starttime *= 60;
+	int minutes = starttime;
+	if(minutes < 10){
+		printf("\n%d:0%d have elapsed since you started your study session.\n\n", hours, minutes);
+	}
+	else{
+		printf("\n%d:%d have elapsed since you started your study session.\n\n", hours, minutes);
+	}
+	return 0;
+}
+
 //The parse method compares the input to a list of possible inputs,
 //calling the corresponding function.
 //If the input is invalid, it prints 'invalid input'
@@ -1517,6 +1579,9 @@ void parse(char *str){
 					break;
 				case 8: 
 					openTopic();
+					break;
+				case 14:
+					elapsed_time();
 					break;
             	default: 
 					printf("\nThere is no matching input. Please retry or enter 'help' for more options.\n\n");
