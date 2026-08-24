@@ -1056,7 +1056,7 @@ int average_time(int argc, int numDays){
 	}
 
 	snprintf(sql, sizeof(sql),
-        "SELECT start, endtime, status FROM sessions WHERE date(start) > date((julianday('now') - %d)) ORDER BY start DESC;",
+        "SELECT start, endtime, status FROM sessions WHERE date(start, 'localtime') > date((julianday('now') - %d), 'localtime') ORDER BY start DESC;",
         numDays
     );
 
@@ -1428,7 +1428,7 @@ int enterSession(int argc, char * startTime, char * endTime, int startenergy, in
 
 int listSessions(int argc, int numDays){
 	char sql[250];
-	snprintf(sql, sizeof(sql), "SELECT id, start, endtime, startenergy, endenergy, focusdepth, status, date(start, 'localtime'), time(start, 'localtime') FROM sessions WHERE date(start) > date(julianday('now') - %d) ORDER BY id DESC;", numDays);
+	snprintf(sql, sizeof(sql), "SELECT id, start, endtime, startenergy, endenergy, focusdepth, status, date(start, 'localtime'), time(start, 'localtime') FROM sessions WHERE date(start, 'localtime') > date((julianday('now') - %d), 'localtime') ORDER BY id DESC;", numDays);
 	//averages time spent studying over an entered period of time
 
 	//prepares the statement
