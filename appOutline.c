@@ -220,7 +220,7 @@ int getArgs(char *str){
 		printf("incremented index\n");
 	}
 	if(is_quoted){
-		printf("Error: unclosed quotations");
+		printf("Error: unclosed quotations2");
 		return 1;
 	}
 	printf("Finished processing");
@@ -1328,7 +1328,7 @@ int update_focusdepth(int focusdepth, int id){
 		printf("Error: An invalid end energy was entered. Please correct your input.\n");
 		return 1;
 	}
-	snprintf(sql, sizeof(sql), "UPDATE sessions SET endenergy = %d WHERE id = %d;", focusdepth, id);
+	snprintf(sql, sizeof(sql), "UPDATE sessions SET focusdepth = %d WHERE id = %d;", focusdepth, id);
 	
 	int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
 
@@ -1744,7 +1744,7 @@ int main(){
 	int cont = 1;
 	while(cont){
 		printf("Failnaught: ");
-		char *p = fgets(operation, 150, stdin);
+		char *p = fgets(operation, sizeof(operation), stdin);
 
 		parse(p);	
 	}
