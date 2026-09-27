@@ -1525,6 +1525,7 @@ int elapsed_time(){
 	int hours = starttime;
 	starttime *= 60;
 	int minutes = starttime;
+	minutes %= 60;
 	if(minutes < 10){
 		printf("\n%d:0%d have elapsed since you started your study session.\n\n", hours, minutes);
 	}
