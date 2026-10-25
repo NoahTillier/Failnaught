@@ -30,11 +30,12 @@ char session[10] = "session";
 char delete[10] = "delete";
 char list_sessions[10] = "ls";
 char elapsed[10] = "el";
+char display[10] = "dp";
 
 //number of inputs
-int numInputs = 15;
+int numInputs = 16;
 //input array
-char *inputs[15] = {help, close, start, end, makeNew, list, entry, daily, open, lookup, average, session, delete, list_sessions, elapsed};
+char *inputs[16] = {help, close, start, end, makeNew, list, entry, daily, open, lookup, average, session, delete, list_sessions, elapsed, display};
 
 //used for copying arguments out of callbacks
 typedef struct {
@@ -44,6 +45,10 @@ typedef struct {
 
 //global struct
 saveArguments saveArgs = {NULL, 0};
+
+//global array for easy sessions.db reading
+//contains 5 spaces; relative date * time * start energy * end energy * focus depth
+double session_arry[1024][5];
 
 //testing for React front-end
 int process_input(const char *s){
@@ -1535,6 +1540,155 @@ int elapsed_time(){
 	return 0;
 }
 
+//creates an array to store entries over the period specified by numDays.
+//This function is a helper method that allows other functions to work faster.
+int sql_to_arry(int numDays){
+	//Gets the current timestamp
+	char *sql_one = "SELECT julianday(date('now', 'localtime'));";
+	sqlite3_stmt *stmt;
+
+	//prepares statement 1
+	int rc = sqlite3_prepare_v2(db, sql_one, -1, &stmt, NULL);
+	if(rc != SQLITE_OK){
+		printf("Failed to prepare statement: %s\n", sqlite3_errmsg(db));
+        return rc;
+	}
+
+	//executes statement 1
+	rc = sqlite3_step(stmt);
+	if(rc != SQLITE_ROW){
+		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		return rc;
+	}
+
+	double todaysjulianday = sqlite3_column_double(stmt, 0);
+	
+	rc = sqlite3_step(stmt);
+	
+	if(rc != SQLITE_DONE){
+		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		return rc;
+	}
+
+	//begins main process
+	char sql[250];
+
+	if(numDays == 0){
+		printf("Div by 0 error.\n");
+		return 1;
+	}
+	else if(numDays >= 1024){
+		printf("No period may be greater than 1024 days for this function.\n");
+		return 1;
+	}
+
+	snprintf(sql, sizeof(sql),
+        "SELECT start, endtime, startenergy, endenergy, focusdepth, julianday(date(start, 'localtime')), status FROM sessions WHERE date(start, 'localtime') > date((julianday('now') - %d), 'localtime') ORDER BY start DESC;",
+        numDays
+    );
+
+	//prepares the statement
+	rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+	if(rc != SQLITE_OK){
+		printf("Failed to prepare statement: %s\n", sqlite3_errmsg(db));
+        return rc;
+	}
+	
+	//clears the array
+	int i = 0;
+	do{
+		for(int j = 0; j < sizeof(session_arry[0]); j++){
+			session_arry[i][j] = 0;
+		}
+		i++;
+	}
+	while(session_arry[i][0] != 0);
+
+	//stores the number of hours studied in the day.
+	double hrs = 0.0;
+	//executes the statement until there are no statements left to execute
+	rc = sqlite3_step(stmt);
+	//repopulates the array
+	while(rc == SQLITE_ROW){
+		//gets the status (only wants to count the status=1 sessions with a valid stard/end)
+		int stat = sqlite3_column_int(stmt, 6);
+		if(stat){
+			int index = (int)todaysjulianday;
+			index = index - (int)sqlite3_column_double(stmt, 5);
+			//i = sqlite3_column_double(stmt, 5) - todaysjulianday
+			//gets the end-time (greater than start time), then adds it.
+			double tm = sqlite3_column_double(stmt, 1);
+			hrs = tm;
+			//gets the start-time (less than start time), then subtracts it.
+			tm = sqlite3_column_double(stmt, 0);
+			hrs = hrs - tm;
+			//adds the number of hours to the array
+			session_arry[index][0] = - index;					//relative days
+			session_arry[index][1] = session_arry[index][1] + hrs;	  //hours
+			session_arry[index][2] = sqlite3_column_int(stmt, 2); //start energy
+			session_arry[index][3] = sqlite3_column_int(stmt, 3); //end energy
+			session_arry[index][4] = sqlite3_column_int(stmt, 4); //focus depth
+			printf("day: %f, hours: %f", session_arry[index][0], session_arry[index][1]);
+		}
+		rc = sqlite3_step(stmt);
+	}
+	
+	if(rc != SQLITE_DONE){
+		printf("Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		return rc;
+	}
+
+	return 0;
+}
+
+int display_hours(int argc, int numDays){
+	if(argc != 2){
+		printf("Incorrect number of arguments");
+		return 1;
+	}
+	if(sql_to_arry(numDays) != 0){
+		printf("An error occured constructing the array from sql. Please resolve");
+		return 1;
+	}
+
+	printf("\n\nDISPLAY\n");
+	printf("Day:  ");
+	printf("(Today)\t");
+	for(int j = 1; j < numDays; j++){
+		printf("%d\t", -j);
+	}
+
+	int finished = 0;
+	int scale = 0;
+	while(finished != 1){
+		if(scale % 4 == 0){
+			printf("\n%d Hrs\t", (scale/4));
+		}
+		else{
+			printf("\n\t");
+		}
+		finished = 1;
+		for(int i = 0; i < numDays; i++){
+			if(session_arry[i][1] > 0){
+				printf("|_|\t");
+				session_arry[i][1] = session_arry[i][1] - (0.25/24);
+				finished = 0;
+			}
+			else{
+				if(scale == 0){
+					printf(" - \t");
+				}
+				else{
+					printf("\t");
+				}
+				
+			}
+		}
+		scale++;
+	}
+	printf("\n\n");
+}
+
 //The parse method compares the input to a list of possible inputs,
 //calling the corresponding function.
 //If the input is invalid, it prints 'invalid input'
@@ -1689,6 +1843,17 @@ void parse(char *str){
 						}
 						else{
 							listSessions(saveArgs.argc, days);
+						}
+					}
+					break;
+				case 15:
+					if(saveArgs.argc == 2){
+						days = toInt(saveArgs.argv[1]);
+						if(days < 0){
+							printf("\nError: Invalid numDays, %d. Please try again.\n\n", days);
+						}
+						else{
+							display_hours(saveArgs.argc, days);
 						}
 					}
 					break;
