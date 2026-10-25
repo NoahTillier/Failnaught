@@ -30,7 +30,7 @@ char session[10] = "session";
 char delete[10] = "delete";
 char list_sessions[10] = "ls";
 char elapsed[10] = "el";
-char display[10] = "dp";
+char display[10] = "dsp";
 
 //number of inputs
 int numInputs = 16;
@@ -85,7 +85,8 @@ void appHelp(){
 		"'session [starttime] [endtime] [startenergy] [endenergy] [focusdepth]' : enters a new session with user-defined values. Note that the start and end times must be in quotes presented 'yyyy-mm-dd hh:mm:ss'\n"
 		"'delete [id]' : removes the session corresponding to the entered id, if one exists.\n"
 		"'ls [numDays]' : lists all sessions within the last numDays.\n"
-		"'el' : displays the elapsed time of your current session in hours:minutes.\n\n");
+		"'el' : displays the elapsed time of your current session in hours:minutes.\n"
+		"'dsp [numDays]' : creates a graph of the amount of time you have spent studying every day.\n\n");
 }
 
 //close input
