@@ -1609,6 +1609,10 @@ int sql_to_arry(int numDays){
 	double hrs = 0.0;
 	//executes the statement until there are no statements left to execute
 	rc = sqlite3_step(stmt);
+	//fills the relative days
+	for(int j = 0; j < numDays; j++){
+		session_arry[j][0] = -j;
+	}	
 	//repopulates the array
 	while(rc == SQLITE_ROW){
 		//gets the status (only wants to count the status=1 sessions with a valid stard/end)
@@ -1624,7 +1628,6 @@ int sql_to_arry(int numDays){
 			tm = sqlite3_column_double(stmt, 0);
 			hrs = hrs - tm;
 			//adds the number of hours to the array
-			session_arry[index][0] = - index;					//relative days
 			session_arry[index][1] = session_arry[index][1] + hrs;	  //hours
 			session_arry[index][2] = sqlite3_column_int(stmt, 2); //start energy
 			session_arry[index][3] = sqlite3_column_int(stmt, 3); //end energy
